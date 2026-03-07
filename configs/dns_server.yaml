@@ -1,0 +1,16 @@
+agent:
+  type: dns_server
+  log_rate_per_sec: 0.1
+
+log_category_weights:
+  dns: 1
+
+log_probabilities:
+  dns:
+    dns_query: 0.35
+    internal_lookup: 0.30
+    suspicious_domain: 0.01
+    cloud_lookup: 0.30
+    dns_failure: 0.04
+
+attack_mode: none
