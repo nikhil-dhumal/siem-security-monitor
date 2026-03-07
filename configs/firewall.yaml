@@ -1,0 +1,18 @@
+agent:
+  type: firewall
+  log_rate_per_sec: 0.1
+
+log_category_weights:
+  firewall: 1
+
+log_probabilities:
+  firewall:
+    allow_tcp: 0.20
+    block_tcp: 0.10
+    dns_allow: 0.20
+    dns_block: 0.05
+    port_scan_block: 0.01
+    http_outbound: 0.35
+    http_block: 0.09
+
+attack_mode: none

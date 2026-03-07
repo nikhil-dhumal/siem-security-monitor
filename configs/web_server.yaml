@@ -1,0 +1,32 @@
+agent:
+  type: web_server
+  log_rate_per_sec: 10
+
+log_category_weights:
+  auth: 0.05
+  web: 0.50
+  process: 0.45
+
+log_probabilities:
+  auth:
+    ssh_login_success: 0.40
+    ssh_login_failure: 0.05
+    invalid_user: 0.05
+    sudo_command: 0.40
+    user_logout: 0.10
+  
+  web:
+    page_access: 0.35
+    login_request: 0.25
+    admin_access_denied: 0.03
+    directory_traversal: 0.02
+    api_access: 0.35
+
+  process:
+    normal_process: 0.77
+    admin_command: 0.20
+    network_scan: 0.01
+    reverse_shell: 0.01
+    file_download: 0.01
+
+attack_mode: none

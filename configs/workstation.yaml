@@ -1,0 +1,48 @@
+agent:
+  type: workstation
+  log_rate_per_sec: 10
+
+log_category_weights:
+  auth: 0.05
+  web: 0.20
+  dns: 0.05
+  process: 0.40
+  file_access: 0.30
+
+log_probabilities:
+  auth:
+    ssh_login_success: 0.10
+    ssh_login_failure: 0.01
+    invalid_user: 0.05
+    sudo_command: 0.74
+    user_logout: 0.10
+
+  web:
+    page_access: 0.46
+    login_request: 0.05
+    admin_access_denied: 0.01
+    directory_traversal: 0.01
+    api_access: 0.46
+
+  dns:
+    dns_query: 0.30
+    internal_lookup: 0.30
+    suspicious_domain: 0.01
+    cloud_lookup: 0.30
+    dns_failure: 0.09
+
+  process:
+    normal_process: 0.85
+    admin_command: 0.03
+    network_scan: 0.01
+    reverse_shell: 0.01
+    file_download: 0.10
+
+  file_access:
+    file_read: 0.55
+    file_write: 0.40
+    sensitive_file_read: 0.01
+    file_delete: 0.05
+    config_change: 0.04
+
+attack_mode: none

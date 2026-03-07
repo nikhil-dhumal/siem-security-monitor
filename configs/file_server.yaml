@@ -1,0 +1,32 @@
+agent:
+  type: file_server
+  log_rate_per_sec: 1
+
+log_category_weights:
+  auth: 0.1
+  process: 0.45
+  file_access: 0.45
+
+log_probabilities:
+  auth:
+    ssh_login_success: 0.40
+    ssh_login_failure: 0.05
+    invalid_user: 0.05
+    sudo_command: 0.40
+    user_logout: 0.10
+
+  process:
+    normal_process: 0.85
+    admin_command: 0.0
+    network_scan: 0.01
+    reverse_shell: 0.01
+    file_download: 0.08
+
+  file_access:
+    file_read: 0.55
+    file_write: 0.35
+    sensitive_file_read: 0.02
+    file_delete: 0.02
+    config_change: 0.06
+
+attack_mode: none

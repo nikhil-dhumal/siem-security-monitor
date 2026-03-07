@@ -138,21 +138,22 @@ Using a relational database makes it easier to perform structured queries and an
 
 ---
 
-# 6. Redis Pub/Sub (Real-Time Alerts)
+# 6. Redis Streams (Real-Time Alerts)
 
-Redis Pub/Sub is used for **real-time communication**.
+Redis Streams is also used for **alert delivery** in addition to event ingestion.
 
-When detection workers generate alerts, they publish them to Redis Pub/Sub.
+When detection workers generate alerts, they write them to a **separate Redis Stream dedicated to alerts**.
 
-The Django backend subscribes to these alert channels.
+The Django backend consumes alerts from this stream using a **consumer group**.
 
-This allows alerts to be delivered **immediately without polling**.
+Using Redis Streams for alerts provides several advantages:
 
-Advantages:
+* reliable delivery of alerts
+* ability to replay alerts if needed
+* persistence of alerts until they are acknowledged
+* support for multiple consumers
 
-* very low latency
-* simple messaging model
-* good for real-time notifications
+This improves the reliability of the alerting system.
 
 ---
 
@@ -204,15 +205,15 @@ This ensures that new alerts appear immediately on the interface.
 
 The complete data flow is as follows:
 
-1. Agents generates logs.
+1. Agents generate logs.
 2. Logs are sent to aggregators.
 3. Aggregators normalize logs into structured events.
 4. Events are written to Redis Streams.
 5. Detection workers read events from the stream.
 6. Detection rules generate alerts.
 7. Alerts and events are stored in PostgreSQL.
-8. Alerts are published through Redis Pub/Sub.
-9. Django receives alerts and pushes them to the dashboard.
+8. Alerts are written to Redis Streams.
+9. Django consumes alerts from the stream and forwards them to the dashboard using WebSockets.
 10. Users see alerts in real time.
 
 ---
@@ -240,19 +241,16 @@ Redis Streams and Pub/Sub allow the system to handle **high event throughput**.
 
 This architecture has several benefits:
 
-Modular design
-Each component has a clear responsibility.
+**Modular design:** Each component has a clear responsibility.
 
-Scalability
-Workers and aggregators can scale horizontally.
+**Scalability:** Workers and aggregators can scale horizontally.
 
-Real-time alerts
-Redis Pub/Sub enables instant notifications.
+**Reliability:** Redis Streams ensures that events and alerts are not lost, even if processing services restart.
 
-Reliability
-Redis Streams prevents event loss during processing.
+**Replay capability:** Streams allow components to re-read events or alerts if necessary, which is useful for debugging and recovery.
 
-Separation of concerns
-Log collection, detection, storage, and visualization are independent.
+**Real-time alert delivery:** Alerts are streamed to the backend and pushed to the dashboard using WebSockets.
+
+**Separation of concerns:** Log collection, detection, storage, and visualization are independent.
 
 ---
