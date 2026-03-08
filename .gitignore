@@ -1,0 +1,10 @@
+.venv/
+venv/
+backend/db.sqlite3
+.vscode/
+**/__pycache__/
+frontend/node_modules/
+.env
+*.pyc
+*.pyo
+*.log
