@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .venv/
 venv/
 backend/db.sqlite3
@@ -8,3 +9,6 @@ frontend/node_modules/
 *.pyc
 *.pyo
 *.log
+=======
+venv/
+__pycache__/

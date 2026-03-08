@@ -1,0 +1,24 @@
+agent:
+  type: vpn_gateway
+  log_rate_per_sec: 0.1
+
+log_category_weights:
+  auth: 0.1
+  vpn: 0.9
+
+log_probabilities:
+  auth:
+    ssh_login_success: 0.10
+    ssh_login_failure: 0.20
+    invalid_user: 0.10
+    sudo_command: 0.10
+    user_logout: 0.50
+
+  vpn:
+    vpn_connect: 0.40
+    vpn_disconnect: 0.40
+    vpn_auth_failure: 0.05
+    vpn_timeout: 0.10
+    vpn_duplicate: 0.05
+
+attack_mode: none
