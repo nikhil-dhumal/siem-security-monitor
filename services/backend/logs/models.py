@@ -1,0 +1,21 @@
+from django.db import models
+
+class Log(models.Model):
+    timestamp = models.DateTimeField(null=True)
+    host = models.CharField(max_length=100, null=True)
+    category = models.CharField(max_length=50)
+    event_type = models.CharField(max_length=50)
+    outcome = models.CharField(max_length=20, null=True)
+    user = models.CharField(max_length=100, null=True)
+    src_ip = models.GenericIPAddressField(null=True)
+    dst_ip = models.GenericIPAddressField(null=True)
+    src_port = models.IntegerField(null=True)
+    dst_port = models.IntegerField(null=True)
+    pid = models.IntegerField(null=True)
+    command = models.TextField(null=True)
+    file = models.TextField(null=True)
+    proto = models.CharField(max_length=20, null=True)
+    domain = models.CharField(max_length=255, null=True)
+    raw_log = models.TextField()
+    raw = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
