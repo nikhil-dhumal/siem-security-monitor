@@ -1,8 +1,7 @@
 from datetime import datetime, UTC
 from fastapi import FastAPI
-from common import publish, EVENT_STREAM
+from shared.redis import publish, EVENT_STREAM
 from parser.base import parse_log
-
 
 app = FastAPI()
 
