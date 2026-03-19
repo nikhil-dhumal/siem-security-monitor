@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class Log(models.Model):
     timestamp = models.DateTimeField(null=True)
     host = models.CharField(max_length=100, null=True)
@@ -19,3 +20,27 @@ class Log(models.Model):
     raw_log = models.TextField()
     raw = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Alert(models.Model):
+    SEVERITY_CHOICES = [
+        ("low", "Low"),
+        ("medium", "Medium"),
+        ("high", "High"),
+        ("critical", "Critical"),
+    ]
+
+    rule_id = models.CharField(max_length=50)
+    rule_name = models.CharField(max_length=100)
+    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES)
+    description = models.TextField()
+    triggered_at = models.DateTimeField()
+    event = models.JSONField()
+    extra = models.JSONField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-triggered_at"]
+
+    def __str__(self):
+        return f"[{self.severity.upper()}] {self.rule_id} - {self.triggered_at}"
