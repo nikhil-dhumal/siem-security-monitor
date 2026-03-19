@@ -1,0 +1,119 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  aggregator1:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/aggregator.Dockerfile
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    ports:
+      - "8000:8000"
+
+  aggregator2:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/aggregator.Dockerfile
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+    ports:
+      - "8001:8000"
+
+  agent_workstation:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/agent.Dockerfile
+    environment:
+      - AGENT_TYPE=workstation
+      - AGGREGATOR=http://aggregator1:8000/ingest
+      - AGENT_CONFIG_PATH=configs/workstation.yaml
+    depends_on:
+      - aggregator1
+      - redis
+
+  agent_web_server:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/agent.Dockerfile
+    environment:
+      - AGENT_TYPE=web_server
+      - AGGREGATOR=http://aggregator1:8000/ingest
+      - AGENT_CONFIG_PATH=configs/web_server.yaml
+    depends_on:
+      - aggregator1
+      - redis
+
+  agent_firewall:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/agent.Dockerfile
+    environment:
+      - AGENT_TYPE=firewall
+      - AGGREGATOR=http://aggregator1:8000/ingest
+      - AGENT_CONFIG_PATH=configs/firewall.yaml
+    depends_on:
+      - aggregator1
+      - redis
+
+  agent_dns_server:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/agent.Dockerfile
+    environment:
+      - AGENT_TYPE=dns_server
+      - AGGREGATOR=http://aggregator2:8000/ingest
+      - AGENT_CONFIG_PATH=configs/dns_server.yaml
+    depends_on:
+      - aggregator2
+      - redis
+
+  agent_file_server:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/agent.Dockerfile
+    environment:
+      - AGENT_TYPE=file_server
+      - AGGREGATOR=http://aggregator2:8000/ingest
+      - AGENT_CONFIG_PATH=configs/file_server.yaml
+    depends_on:
+      - aggregator2
+      - redis
+
+  agent_vpn_gateway:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/agent.Dockerfile
+    environment:
+      - AGENT_TYPE=vpn_gateway
+      - AGGREGATOR=http://aggregator2:8000/ingest
+      - AGENT_CONFIG_PATH=configs/vpn_gateway.yaml
+    depends_on:
+      - aggregator2
+      - redis
+
+  postgres:
+    image: postgres:15
+    container_name: siem_postgres
+    environment:
+      POSTGRES_DB: siem
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
