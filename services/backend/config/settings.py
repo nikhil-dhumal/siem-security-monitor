@@ -16,8 +16,10 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
+REPO_ROOT = os.path.dirname(PROJECT_ROOT)
 
 sys.path.append(PROJECT_ROOT)
+sys.path.append(REPO_ROOT) 
 
 
 # Quick-start development settings - unsuitable for production
@@ -83,7 +85,7 @@ DATABASES = {
         "NAME": "siem",
         "USER": "postgres",
         "PASSWORD": "password",
-        "HOST": "localhost",
+        "HOST": os.environ.get("DB_HOST", "localhost"),
         "PORT": "5432",
     }
 }
