@@ -33,3 +33,72 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# OS/system files
+Thumbs.db
+Desktop.ini
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# Python virtual environments
+.venv/
+venv/
+ENV/
+
+# Python test/coverage
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+
+# Django/migrations
+**/migrations/*.pyc
+**/migrations/*.pyo
+**/migrations/__pycache__/
+
+# Jupyter/IPython
+.ipynb_checkpoints/
+
+# Build artifacts
+build/
+*.egg-info/
+.eggs/
+
+# Logs and temp
+*.log
+*.out
+*.err
+
+# Local config
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# npm/yarn/pnpm
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# VSCode/JetBrains
+.vscode/
+.idea/
+
+# Node modules
+node_modules/
+
+# Output/dist
+/dist/
+/dist-ssr/
+
+# Ignore system status and requirements
+SYSTEM_STATUS.md
+requirements.txt
+.venv/

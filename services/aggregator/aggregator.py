@@ -1,7 +1,16 @@
-from datetime import datetime, UTC
+import sys
+import os
+
+# Add parent directories to path so imports work
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.dirname(__file__))
+
+from datetime import datetime, timezone
 from fastapi import FastAPI
 from shared.redis import publish, EVENT_STREAM
 from parser.base import parse_log
+
+UTC = timezone.utc
 
 app = FastAPI()
 
