@@ -1,10 +1,3 @@
-// ============================================================
-// FILE: frontend/src/components/LiveAlertFeed.jsx
-// Real-time log feed — connects to ws://localhost:8000/ws/logs/
-// New logs appear instantly at the top as they arrive.
-// Uses useLogStream hook which wraps the WebSocket connection.
-// ============================================================
-
 import { useState } from 'react';
 import { useLogStream } from '../hooks/useWebSocket';
 
@@ -232,7 +225,7 @@ export default function LiveAlertFeed({ maxLogs = 30 }) {
         </div>
       )}
 
-      {/* Log rows */}
+      {/* Log rows - scrollable container */}
       {filtered.length === 0 ? (
         <div
           style={{
@@ -245,7 +238,16 @@ export default function LiveAlertFeed({ maxLogs = 30 }) {
           {isConnected ? 'Waiting for logs…' : 'Connecting to server…'}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        <div 
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 5,
+            maxHeight: '400px',
+            overflowY: 'auto',
+            paddingRight: '4px',
+          }}
+        >
           {filtered.map((log, i) => (
             <LogRow key={log.id || i} log={log} isNew={i === 0 && isConnected} />
           ))}

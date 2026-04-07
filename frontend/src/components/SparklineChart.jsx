@@ -1,10 +1,3 @@
-// ============================================================
-// FILE: frontend/src/components/SparklineChart.jsx
-// Events-over-time line chart built with pure SVG (no deps).
-// Data from GET /api/logs/timeline/?hours=N&bucket=hour
-// Shows: line + area fill, peak marker, time-axis labels
-// ============================================================
-
 import Card, { CardTitle } from './common/Card.jsx';
 import Spinner from './common/Spinner.jsx';
 import ErrorMsg from './common/ErrorMsg.jsx';

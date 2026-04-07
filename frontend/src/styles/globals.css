@@ -1,9 +1,3 @@
-/* ============================================================
-   FILE: frontend/src/styles/globals.css
-   Global design tokens, resets, animations for SIEM UI
-   Dark terminal aesthetic — industrial security tool feel
-   ============================================================ */
-
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700&display=swap');
 
 *, *::before, *::after {

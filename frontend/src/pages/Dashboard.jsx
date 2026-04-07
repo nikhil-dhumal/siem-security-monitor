@@ -5,6 +5,7 @@ import { CategoryDonut, TopEventsBar } from '../components/CategoryDonut.jsx';
 import WorldThreatMap from '../components/WorldThreatMap.jsx';
 import { TopIPsTable, LogTable } from '../components/LogTable.jsx';
 import LiveAlertFeed  from '../components/LiveAlertFeed.jsx';
+import SecurityAlerts from '../components/SecurityAlerts.jsx';
 import Card           from '../components/common/Card.jsx';
 import { CardTitle }  from '../components/common/Card.jsx';
 
@@ -21,6 +22,9 @@ export default function Dashboard({ hours }) {
         <CategoryDonut  hours={hours} />
         <TopEventsBar   hours={hours} />
       </div>
+
+      {/* Security Alerts Dashboard */}
+      <SecurityAlerts hours={hours} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 12 }}>
         <WorldThreatMap hours={hours} onIPClick={ip => setDrillIP(ip)} />

@@ -1,9 +1,3 @@
-// ============================================================
-// FILE: frontend/src/pages/Analytics.jsx
-// Charts & analytics page — top hosts, users, outcomes,
-// event types, category breakdown for the selected time window.
-// ============================================================
-
 import Card from '../components/common/Card.jsx';
 import { CardTitle } from '../components/common/Card.jsx';
 import Spinner from '../components/common/Spinner.jsx';

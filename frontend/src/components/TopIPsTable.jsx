@@ -1,9 +1,3 @@
-// ============================================================
-// FILE: frontend/src/components/TopIPsTable.jsx
-// Top source IPs by event count.
-// Data from GET /api/logs/top-ips/?hours=N
-// ============================================================
-
 import Card, { CardTitle } from './common/Card.jsx';
 import Spinner from './common/Spinner.jsx';
 import ErrorMsg from './common/ErrorMsg.jsx';
@@ -87,14 +81,6 @@ export function TopIPsTable({ hours, onIPClick }) {
   );
 }
 
-
-// ============================================================
-// FILE: frontend/src/components/LogTable.jsx
-// Full paginated, filterable log table.
-// Data from GET /api/logs/?hours=N&search=X&category=Y…
-// Supports: free-text search, category filter, outcome filter,
-//           src_ip filter, host filter, pagination
-// ============================================================
 
 import { useState, useEffect } from 'react';
 import { Pill, SEV_COLORS } from './ui/index.jsx';

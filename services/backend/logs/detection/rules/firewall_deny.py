@@ -1,5 +1,5 @@
 from collections import defaultdict, deque
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from .base import BaseRule
 
 _denies: dict[str, deque] = defaultdict(deque)
@@ -23,7 +23,7 @@ class FirewallDenyRule(BaseRule):
         if not src_ip:
             return None
 
-        now = datetime.now(UTC).timestamp()
+        now = datetime.now(timezone.utc).timestamp()
         timestamps = _denies[src_ip]
 
         timestamps.append(now)

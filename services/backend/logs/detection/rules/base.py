@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 
 
 class BaseRule(ABC):
@@ -17,7 +17,7 @@ class BaseRule(ABC):
             "rule_name": self.name,
             "severity": self.severity,
             "description": description,
-            "triggered_at": datetime.now(UTC).isoformat(),
+            "triggered_at": datetime.now(timezone.utc).isoformat(),
             "event": event,
         }
         if extra:

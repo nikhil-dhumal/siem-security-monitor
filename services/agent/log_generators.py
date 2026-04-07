@@ -151,6 +151,15 @@ templates = {
 
 
 def random_ip(agent_type=None):
+    # 50% chance to use a public IP for all agent types
+    if random.random() < 0.5:
+        # Use a real public IP range (e.g., Google DNS, Cloudflare, etc.)
+        public_ips = [
+            "8.8.8.8", "1.1.1.1", "8.8.4.4", "9.9.9.9", "208.67.222.222", "185.228.168.9",
+            "64.233.160.0", "104.16.0.0", "172.217.0.0", "151.101.1.69", "23.216.10.50"
+        ]
+        return random.choice(public_ips)
+    # Otherwise, use the original logic
     if agent_type in ["workstation", "file_server", "vpn", "dns"]:
         return f"10.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}"
     elif agent_type == "web_server":

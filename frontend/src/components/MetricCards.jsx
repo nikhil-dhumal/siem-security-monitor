@@ -1,11 +1,3 @@
-// ============================================================
-// FILE: frontend/src/components/MetricCards.jsx
-// KPI metric cards — now powered by WebSocket live stats.
-// Connects to ws://localhost:8000/ws/stats/
-// Stats update every 5 seconds automatically from the server.
-// Falls back to REST API if WebSocket is unavailable.
-// ============================================================
-
 import { useStatsStream } from '../hooks/useWebSocket';
 import { useSummary }     from '../hooks/useLogs';
 

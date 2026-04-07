@@ -1,11 +1,3 @@
-# ============================================================
-# FILE: services/backend/logs/signals.py
-# Django post_save signal — fires every time a new Log row
-# is inserted into PostgreSQL.
-# Immediately pushes the new log to the Redis channel group
-# so ALL connected browser tabs receive it in real-time.
-# ============================================================
-
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from asgiref.sync import async_to_sync

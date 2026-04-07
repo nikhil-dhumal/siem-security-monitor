@@ -1,5 +1,5 @@
 from collections import defaultdict, deque
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from .base import BaseRule
 
 _connections: dict[str, deque] = defaultdict(deque)
@@ -24,7 +24,7 @@ class PortScanRule(BaseRule):
         if not src_ip or not dst_port:
             return None
 
-        now = datetime.now(UTC).timestamp()
+        now = datetime.now(timezone.utc).timestamp()
         history = _connections[src_ip]
 
         history.append((now, dst_port))

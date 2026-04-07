@@ -1,10 +1,3 @@
-// ============================================================
-// FILE: frontend/src/App.jsx
-// Root application shell.
-// Renders: Sidebar + TopBar + routed page content.
-// All pages receive `hours` prop (time window selector).
-// ============================================================
-
 import { useState } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 

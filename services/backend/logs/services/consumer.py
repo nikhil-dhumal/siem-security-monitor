@@ -20,8 +20,25 @@ CONSUMER = "backend_1"
 
 
 def store_log(event: dict):
+    timestamp = None
+    if event.get("timestamp"):
+        try:
+            timestamp = parse_datetime(event.get("timestamp"))
+        except:
+            pass
+    
+    # If no valid timestamp, use ingested_at or now
+    if not timestamp:
+        if event.get("ingested_at"):
+            try:
+                timestamp = parse_datetime(event.get("ingested_at"))
+            except:
+                timestamp = timezone.now()
+        else:
+            timestamp = timezone.now()
+    
     return Log.objects.create(
-        timestamp=parse_datetime(event.get("timestamp")),
+        timestamp=timestamp,
         host=event.get("host"),
         category=event.get("category"),
         event_type=event.get("event_type"),

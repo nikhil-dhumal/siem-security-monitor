@@ -1,18 +1,3 @@
-# ============================================================
-# FILE: services/backend/logs/consumers.py
-# Django Channels WebSocket consumers.
-#
-# LogStreamConsumer  → streams new Log rows in real-time
-# StatsConsumer      → streams updated summary stats every 5s
-#
-# How it works:
-#   1. Browser connects via WebSocket
-#   2. Consumer joins a Redis "channel group"
-#   3. When a new Log is saved (via Django signal), it's sent
-#      to the Redis group → broadcast to all connected browsers
-#   4. StatsConsumer runs a background loop every 5s
-# ============================================================
-
 import json
 import asyncio
 from datetime import timedelta

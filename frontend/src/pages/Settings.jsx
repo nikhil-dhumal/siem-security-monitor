@@ -1,9 +1,3 @@
-// ============================================================
-// FILE: frontend/src/pages/Settings.jsx
-// Settings page — API connection, environment variables,
-// data source configuration.
-// ============================================================
-
 import Card, { CardTitle } from '../components/common/Card.jsx';
 
 function SettingsRow({ label, value, mono = false }) {

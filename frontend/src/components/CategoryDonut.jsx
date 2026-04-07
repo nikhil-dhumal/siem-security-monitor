@@ -1,9 +1,3 @@
-// ============================================================
-// FILE: frontend/src/components/CategoryDonut.jsx
-// SVG donut chart — event count per log category.
-// Data from GET /api/logs/categories/?hours=N
-// ============================================================
-
 import Card, { CardTitle } from './common/Card.jsx';
 import Spinner from './common/Spinner.jsx';
 import ErrorMsg from './common/ErrorMsg.jsx';
@@ -111,12 +105,6 @@ export function CategoryDonut({ hours }) {
     </Card>
   );
 }
-
-// ============================================================
-// FILE: frontend/src/components/TopEventsBar.jsx
-// Horizontal bar chart — top event_type values.
-// Data from GET /api/logs/event-types/?hours=N
-// ============================================================
 
 import { useEventTypes } from '../hooks/useLogs';
 

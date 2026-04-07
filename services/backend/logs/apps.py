@@ -6,6 +6,4 @@ class LogsConfig(AppConfig):
     name               = 'logs'
 
     def ready(self):
-        # Import signals so @receiver decorators are registered.
-        # Without this line, log_saved() never fires.
-        import logs.signals  # noqa: F401
+        import logs.signals  

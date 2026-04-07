@@ -102,3 +102,4 @@ node_modules/
 SYSTEM_STATUS.md
 requirements.txt
 .venv/
+ALL_COMMANDS.sh

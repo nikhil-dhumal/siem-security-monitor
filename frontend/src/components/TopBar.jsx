@@ -1,11 +1,3 @@
-// ============================================================
-// FILE: frontend/src/components/TopBar.jsx
-// Top header bar — live clock, time-window buttons, search.
-// Props:
-//   hours         — currently selected time window
-//   onHoursChange — callback when user picks a different window
-// ============================================================
-
 import { useState, useEffect } from 'react';
 import LiveDot from './common/LiveDot.jsx';
 

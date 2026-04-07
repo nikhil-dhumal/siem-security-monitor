@@ -88,7 +88,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
+            'hosts': [('127.0.0.1', 16379)],
             'capacity': 1500,        # max messages in channel
             'expiry':   10,          # seconds before message expires
         },
@@ -106,7 +106,7 @@ DATABASES = {
         "USER": "postgres",
         "PASSWORD": "password",
         "HOST": os.environ.get("DB_HOST", "localhost"),
-        "PORT": "5432",
+        "PORT": "15432",
     }
 }
 

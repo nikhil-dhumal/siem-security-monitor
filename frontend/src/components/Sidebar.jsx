@@ -1,9 +1,3 @@
-// ============================================================
-// FILE: frontend/src/components/Sidebar.jsx
-// Left sidebar — all SIEM module navigation links.
-// Shows active state, alert badge, DB connection status.
-// ============================================================
-
 import LiveDot from './common/LiveDot.jsx';
 
 const NAV_ITEMS = [

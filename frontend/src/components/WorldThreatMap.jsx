@@ -1,14 +1,3 @@
-// ============================================================
-// FILE: frontend/src/components/WorldThreatMap.jsx
-// D3 world map — plots real attacker IPs from the database.
-// Data flow:
-//   1. GET /api/logs/geo/  → raw { src_ip, count, category }
-//   2. ip-api.com batch    → enriches with lat, lon, country
-//   3. D3 + TopoJSON       → renders world map + dots
-// Hover any dot for a tooltip (IP, city, ISP, events).
-// Click a dot to drill into that IP in the log explorer.
-// ============================================================
-
 import { useEffect, useRef, useState } from 'react';
 import Card, { CardTitle } from './common/Card.jsx';
 import Spinner from './common/Spinner.jsx';
@@ -16,16 +5,14 @@ import ErrorMsg from './common/ErrorMsg.jsx';
 import EmptyState from './common/EmptyState.jsx';
 import { useGeoIPs } from '../hooks/useLogs';
 
-// Color by event volume (relative to the session max)
 function getDotColor(count, max) {
   const ratio = count / max;
-  if (ratio > 0.5)  return '#ff3d57'; // critical volume
-  if (ratio > 0.2)  return '#ff6b35'; // high
-  if (ratio > 0.05) return '#ffc107'; // medium
-  return '#2979ff';                    // low
+  if (ratio > 0.5)  return '#ff3d57';
+  if (ratio > 0.2)  return '#ff6b35';
+  if (ratio > 0.05) return '#ffc107';
+  return '#2979ff';
 }
 
-// Dot radius scaled by volume (3–10 px)
 function getDotRadius(count, max) {
   return Math.max(3, Math.min(10, 3 + (count / max) * 8));
 }
@@ -38,7 +25,17 @@ const LEGEND = [
 ];
 
 export default function WorldThreatMap({ hours, onIPClick }) {
+  // DEBUG: Show what IPs are being geo-located and what geo data is returned
   const { data, loading, error } = useGeoIPs(hours);
+
+  useEffect(() => {
+    if (data) {
+      console.log('[WorldThreatMap] GeoIP data:', data);
+      if (data.length === 0) {
+        console.warn('[WorldThreatMap] No geo-located IPs found. Your logs may only contain private IPs (e.g., 10.x.x.x, 192.168.x.x, 127.0.0.1) or the backend is not generating public IPs.');
+      }
+    }
+  }, [data]);
 
   const svgRef   = useRef(null);
   const wrapRef  = useRef(null);
@@ -71,21 +68,30 @@ export default function WorldThreatMap({ hours, onIPClick }) {
 
     drawnRef.current = true;
 
-    const W    = 640;
-    const H    = 310;
-    const svg  = d3.select(svgRef.current).attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%');
-    const proj = d3.geoNaturalEarth1().scale(103).translate([W / 2, H / 2]);
+    const W    = 800;
+    const H    = 450;
+    const svg  = d3.select(svgRef.current).attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%').attr('height', '100%');
+    const proj = d3.geoNaturalEarth1().scale(160).translate([W / 2, H / 2]);
     const path = d3.geoPath(proj);
-    const max  = Math.max(...data.map(d => d.count), 1);
+    const max  = Math.max(...data.map(d => d.count || 0), 1);
+    
+    // Single group for all zoomable content
+    const g = svg.append('g');
+    
+    // Enable zoom functionality
+    const zoom = d3.zoom().on('zoom', (event) => {
+      g.attr('transform', event.transform);
+    });
+    svg.call(zoom);
 
     // Ocean background
-    svg.append('rect')
+    g.append('rect')
       .attr('width', W).attr('height', H)
       .attr('fill', '#0a1520').attr('rx', 6);
 
     // World countries
     d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
-      svg.selectAll('path.land')
+      g.selectAll('path.land')
         .data(topo.feature(world, world.objects.countries).features)
         .join('path')
         .attr('class', 'land')
@@ -94,57 +100,31 @@ export default function WorldThreatMap({ hours, onIPClick }) {
         .attr('stroke', 'rgba(255,255,255,.05)')
         .attr('stroke-width', 0.4);
 
-      // Plot each IP as a circle
-      data.forEach(a => {
+      // Plot each IP as a circle (in zoomable group so they move with map)
+      const validData = data.filter(a => a.lat && a.lon);
+      validData.forEach(a => {
         const [px, py] = proj([a.lon, a.lat]);
         if (!px || !py) return;
 
-        const color  = getDotColor(a.count, max);
-        const radius = getDotRadius(a.count, max);
+        const r = getDotRadius(a.count, max);
+        const c = getDotColor(a.count, max);
 
-        // Pulse ring for high-volume IPs
-        if (a.count > max * 0.3) {
-          svg.append('circle')
-            .attr('cx', px).attr('cy', py).attr('r', radius)
-            .attr('fill', 'none')
-            .attr('stroke', color)
-            .attr('stroke-width', 1.5)
-            .attr('opacity', 0.45)
-            .style('animation', 'ripple 2s ease-out infinite');
-        }
-
-        // Main dot
-        svg.append('circle')
-          .attr('cx', px).attr('cy', py).attr('r', radius)
-          .attr('fill', color)
-          .attr('fill-opacity', 0.88)
-          .attr('stroke', '#080b10')
-          .attr('stroke-width', 1)
-          .style('cursor', 'pointer')
-          .on('mouseenter', () => {
-            const br = wrapRef.current.getBoundingClientRect();
-            const sr = svgRef.current.getBoundingClientRect();
-            const sx = sr.width  / W;
-            const sy = sr.height / H;
-            let tx = px * sx + (sr.left - br.left) + 14;
-            let ty = py * sy + (sr.top  - br.top)  - 12;
-            if (tx + 175 > br.width) tx -= 188;
-            if (ty < 4) ty = 4;
-            setTip({ ...a, x: tx, y: ty });
+        g.append('circle')
+          .attr('cx', px).attr('cy', py).attr('r', r)
+          .attr('fill', c).attr('opacity', 0.8)
+          .attr('stroke', 'rgba(255,255,255,.2)').attr('stroke-width', 0.5)
+          .on('mouseenter', function() {
+            d3.select(this).attr('opacity', 1).attr('r', r + 2).attr('stroke-width', 1.5);
+            setTip({ ...a, x: px + 15, y: py - 15 });
           })
-          .on('mouseleave', () => setTip(null))
+          .on('mouseleave', function() {
+            d3.select(this).attr('opacity', 0.8).attr('r', r).attr('stroke-width', 0.5);
+            setTip(null);
+          })
           .on('click', () => onIPClick?.(a.src_ip));
       });
-
-      // Inject ripple keyframe
-      if (!document.getElementById('map-ripple-style')) {
-        const s = document.createElement('style');
-        s.id = 'map-ripple-style';
-        s.textContent = '@keyframes ripple{0%{opacity:.6;r:8}100%{opacity:0;r:24}}';
-        document.head.appendChild(s);
-      }
-    });
-  }, [mapReady, data, onIPClick]);
+    }).catch(err => console.error('Failed to load world map:', err));
+  }, [mapReady, data]);
 
   return (
     <Card>
@@ -158,93 +138,177 @@ export default function WorldThreatMap({ hours, onIPClick }) {
         <EmptyState message="No geo data — IPs may not have resolved" />
       )}
 
-      <div
-        ref={wrapRef}
-        style={{ position: 'relative', borderRadius: 'var(--radius)', overflow: 'hidden' }}
-      >
-        <svg ref={svgRef} style={{ display: 'block' }} />
-
-        {/* Tooltip */}
-        {tip && (
+      {data?.length > 0 && (
+        <>
           <div
-            style={{
-              position:     'absolute',
-              left:         tip.x,
-              top:          tip.y,
-              background:   'var(--bg2)',
-              border:       '1px solid var(--border2)',
-              borderRadius: 'var(--radius)',
-              padding:      '8px 12px',
-              fontSize:     11,
-              pointerEvents:'none',
-              zIndex:       10,
-              minWidth:     168,
-              animation:    'fadeIn .1s ease',
-            }}
+            ref={wrapRef}
+            style={{ position: 'relative', borderRadius: 'var(--radius)', overflow: 'hidden', minHeight: 480 }}
           >
-            <div
-              style={{
-                fontWeight:   500,
-                fontSize:     12,
-                color:        'var(--text)',
-                marginBottom: 4,
-                fontFamily:   'var(--font-mono)',
-              }}
-            >
-              {tip.src_ip}
-            </div>
-            {[
-              ['Country',  tip.country    ],
-              ['City',     tip.city       ],
-              ['Region',   tip.regionName ],
-              ['ISP',      tip.isp        ],
-              ['Events',   tip.count      ],
-              ['Category', tip.category   ],
-            ].map(([k, v]) => (
+            <svg ref={svgRef} style={{ display: 'block', width: '100%', height: 480 }} />
+
+            {/* Tooltip */}
+            {tip && (
               <div
-                key={k}
                 style={{
-                  display:        'flex',
-                  justifyContent: 'space-between',
-                  gap:            14,
-                  marginTop:      2,
+                  position:     'absolute',
+                  left:         tip.x,
+                  top:          tip.y,
+                  background:   'var(--bg2)',
+                  border:       '2px solid #ff3d57',
+                  borderRadius: 'var(--radius)',
+                  padding:      '12px 14px',
+                  fontSize:     11,
+                  pointerEvents:'none',
+                  zIndex:       1000,
+                  minWidth:     280,
+                  maxWidth:     400,
+                  boxShadow:    '0 8px 24px rgba(0,0,0,0.4)',
+                  animation:    'fadeIn .1s ease',
                 }}
               >
-                <span style={{ color: 'var(--text3)' }}>{k}</span>
-                <span style={{ color: 'var(--text2)' }}>{v ?? '—'}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                {/* IP Header */}
+                <div
+                  style={{
+                    fontWeight:   700,
+                    fontSize:     13,
+                    color:        '#ff3d57',
+                    marginBottom: 8,
+                    fontFamily:   'var(--font-mono)',
+                    wordBreak:    'break-all',
+                  }}
+                >
+                  🔴 {tip.src_ip}
+                </div>
 
-      {/* Legend */}
-      <div
-        style={{
-          display:    'flex',
-          gap:        14,
-          marginTop:  8,
-          fontSize:   10,
-          color:      'var(--text3)',
-          flexWrap:   'wrap',
-        }}
-      >
-        {LEGEND.map(l => (
-          <span key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span
-              style={{
-                width:        8,
-                height:       8,
-                borderRadius: '50%',
-                background:   l.color,
-                display:      'inline-block',
-              }}
-            />
-            {l.label}
-          </span>
-        ))}
-        <span style={{ marginLeft: 'auto' }}>Click dot to investigate IP</span>
-      </div>
+                {/* Divider */}
+                <div style={{ height: '1px', background: 'rgba(255,255,255,.1)', marginBottom: 8 }} />
+
+                {/* Attack Details */}
+                <div style={{ marginBottom: 8 }}>
+                  {[
+                    { label: '📍 Country', value: tip.country || '—' },
+                    { label: '🏙️ City', value: tip.city || '—' },
+                    { label: '🌍 Region', value: tip.regionName || '—' },
+                    { label: '🏢 ISP', value: tip.isp || '—' },
+                  ].map(({ label, value }) => (
+                    <div
+                      key={label}
+                      style={{
+                        display:        'flex',
+                        justifyContent: 'space-between',
+                        gap:            12,
+                        marginBottom:   4,
+                        fontSize:       10,
+                      }}
+                    >
+                      <span style={{ color: 'var(--text3)', fontWeight: 500 }}>{label}</span>
+                      <span style={{ color: 'var(--text2)', textAlign: 'right', maxWidth: '200px', wordBreak: 'break-word' }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Divider */}
+                <div style={{ height: '1px', background: 'rgba(255,255,255,.1)', marginBottom: 8 }} />
+
+                {/* Event Stats */}
+                <div style={{ marginBottom: 8 }}>
+                  {[
+                    { label: '⚠️ Events', value: tip.count ? `${tip.count} events` : '—', color: '#ffc107' },
+                    { label: '🏷️ Category', value: tip.category || '—' },
+                    { label: '🎯 Event Type', value: tip.event_type || '—' },
+                  ].map(({ label, value, color }) => (
+                    <div
+                      key={label}
+                      style={{
+                        display:        'flex',
+                        justifyContent: 'space-between',
+                        gap:            12,
+                        marginBottom:   4,
+                        fontSize:       10,
+                      }}
+                    >
+                      <span style={{ color: 'var(--text3)', fontWeight: 500 }}>{label}</span>
+                      <span style={{ color: color || 'var(--text2)', fontWeight: 500 }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Divider */}
+                <div style={{ height: '1px', background: 'rgba(255,255,255,.1)', marginBottom: 8 }} />
+
+                {/* User & Outcome */}
+                <div>
+                  {[
+                    { label: '👤 User', value: tip.user || 'N/A', isUser: true },
+                    { label: '🎛️ Host', value: tip.host || 'N/A' },
+                    { label: '📊 Outcome', value: tip.outcome ? tip.outcome.toUpperCase() : '—', color: tip.outcome === 'success' || tip.outcome === 'allow' ? '#4caf50' : tip.outcome === 'failure' || tip.outcome === 'failed' || tip.outcome === 'denied' || tip.outcome === 'blocked' ? '#ff3d57' : 'var(--text2)' },
+                    { label: '🔌 Dst Port', value: tip.dst_port || 'N/A' },
+                    { label: '🔌 Src Port', value: tip.src_port || 'N/A' },
+                  ].map(({ label, value, color, isUser }) => (
+                    value && value !== 'N/A' && value !== '—' ? (
+                      <div
+                        key={label}
+                        style={{
+                          display:        'flex',
+                          justifyContent: 'space-between',
+                          gap:            12,
+                          marginBottom:   4,
+                          fontSize:       10,
+                        }}
+                      >
+                        <span style={{ color: 'var(--text3)', fontWeight: 500 }}>{label}</span>
+                        <span style={{ color: color || (isUser ? '#00e5ff' : 'var(--text2)'), fontWeight: isUser ? 600 : 500 }}>{value}</span>
+                      </div>
+                    ) : null
+                  ))}
+                </div>
+
+                {/* Footer */}
+                <div
+                  style={{
+                    marginTop: 8,
+                    paddingTop: 8,
+                    borderTop: '1px solid rgba(255,255,255,.1)',
+                    fontSize: 9,
+                    color: 'var(--text3)',
+                    fontStyle: 'italic',
+                  }}
+                >
+                  💡 Click dot to investigate this IP
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Legend */}
+          <div
+            style={{
+              display:    'flex',
+              gap:        14,
+              marginTop:  8,
+              fontSize:   10,
+              color:      'var(--text3)',
+              flexWrap:   'wrap',
+            }}
+          >
+            {LEGEND.map(l => (
+              <span key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span
+                  style={{
+                    width:        8,
+                    height:       8,
+                    borderRadius: '50%',
+                    background:   l.color,
+                    display:      'inline-block',
+                  }}
+                />
+                {l.label}
+              </span>
+            ))}
+            <span style={{ marginLeft: 'auto' }}>Click dot to investigate IP</span>
+          </div>
+        </>
+      )}
     </Card>
   );
 }
