@@ -10,15 +10,69 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
 from shared.redis import consume, ack, create_group, EVENT_STREAM
-from logs.models import Log
+from logs.models import Log, Alert
+from logs.detection.rules import ALL_RULES
 from django.utils.dateparse import parse_datetime
+from django.utils import timezone
 
 GROUP = "backend_group"
 CONSUMER = "backend_1"
 
 
+def store_log(event: dict):
+    return Log.objects.create(
+        timestamp=parse_datetime(event.get("timestamp")),
+        host=event.get("host"),
+        category=event.get("category"),
+        event_type=event.get("event_type"),
+        outcome=event.get("outcome"),
+        user=event.get("user"),
+        src_ip=event.get("src_ip"),
+        dst_ip=event.get("dst_ip"),
+        src_port=event.get("src_port"),
+        dst_port=event.get("dst_port"),
+        pid=event.get("pid"),
+        command=event.get("command"),
+        file=event.get("file"),
+        proto=event.get("proto"),
+        domain=event.get("domain"),
+        raw_log=event.get("raw_log", ""),
+        raw=event,
+    )
+
+
+def store_alert(alert: dict):
+    known_fields = {"rule_id", "rule_name", "severity", "description", "triggered_at", "event"}
+    extra = {k: v for k, v in alert.items() if k not in known_fields}
+
+    return Alert.objects.create(
+        rule_id=alert.get("rule_id"),
+        rule_name=alert.get("rule_name"),
+        severity=alert.get("severity"),
+        description=alert.get("description"),
+        triggered_at=parse_datetime(alert.get("triggered_at")) or timezone.now(),
+        event=alert.get("event", {}),
+        extra=extra if extra else None,
+    )
+
+
+def run_rules(event: dict):
+    alerts = []
+    for rule in ALL_RULES:
+        try:
+            alert = rule.evaluate(event)
+            if alert:
+                alerts.append(alert)
+        except Exception as e:
+            print(f"Error in rule {rule.rule_id}: {e}")
+    return alerts
+
+
 def start_consumer():
-    print(f"Starting consumer on stream '{EVENT_STREAM}', group '{GROUP}'")
+    print(f"Starting consumer — {len(ALL_RULES)} detection rules loaded")
+    for rule in ALL_RULES:
+        print(f"  [{rule.severity.upper()}] {rule.rule_id}: {rule.name}")
+
     create_group(EVENT_STREAM, GROUP)
 
     while True:
@@ -30,85 +84,23 @@ def start_consumer():
 
         for msg_id, event in messages:
             try:
-                # Parse timestamp - use ingested_at if provided, otherwise parse timestamp
-                timestamp = None
-                ts_str = event.get("timestamp")
-                ingested_str = event.get("ingested_at")
-                
-                if ingested_str:
-                    # Use ingested_at which is properly ISO formatted
-                    timestamp = parse_datetime(ingested_str)
-                elif ts_str:
-                    # Try ISO format first
-                    timestamp = parse_datetime(ts_str)
-                    if not timestamp:
-                        # Try common syslog format: "Mar 20 03:10:12"
-                        from datetime import datetime
-                        try:
-                            # Add current year if not present
-                            from django.utils import timezone
-                            now = timezone.now()
-                            ts_with_year = f"{ts_str} {now.year}"
-                            timestamp = datetime.strptime(ts_with_year, "%b %d %H:%M:%S %Y")
-                            # Make it timezone aware
-                            timestamp = timezone.make_aware(timestamp)
-                        except:
-                            try:
-                                # Try ISO format with Z
-                                timestamp = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
-                            except:
-                                timestamp = None
-                
-                # Convert string port numbers to int if they're numeric strings
-                src_port = event.get("src_port")
-                dst_port = event.get("dst_port")
-                pid = event.get("pid")
-                
-                if src_port and isinstance(src_port, str) and src_port.isdigit():
-                    src_port = int(src_port)
-                elif not src_port or (isinstance(src_port, str) and not src_port.isdigit()):
-                    src_port = None
-                    
-                if dst_port and isinstance(dst_port, str) and dst_port.isdigit():
-                    dst_port = int(dst_port)
-                elif not dst_port or (isinstance(dst_port, str) and not dst_port.isdigit()):
-                    dst_port = None
-                    
-                if pid and isinstance(pid, str) and pid.isdigit():
-                    pid = int(pid)
-                elif not pid or (isinstance(pid, str) and not pid.isdigit()):
-                    pid = None
-                
-                log = Log.objects.create(
-                    timestamp=timestamp,
-                    host=event.get("host"),
-                    category=event.get("category"),
-                    event_type=event.get("event_type"),
-                    outcome=event.get("outcome"),
-                    user=event.get("user"),
-                    src_ip=event.get("src_ip"),
-                    dst_ip=event.get("dst_ip"),
-                    src_port=src_port,
-                    dst_port=dst_port,
-                    pid=pid,
-                    command=event.get("command"),
-                    file=event.get("file"),
-                    proto=event.get("proto"),
-                    domain=event.get("domain"),
-                    raw_log=event.get("raw_log", ""),
-                    raw=event,
-                )
+                store_log(event)
+
+                alerts = run_rules(event)
+
+                for alert in alerts:
+                    alert["event"] = event
+                    store_alert(alert)
+                    print(
+                        f"[ALERT] {alert['rule_id']} | "
+                        f"{alert['severity'].upper()} | "
+                        f"{alert['description']}"
+                    )
+
                 ack(EVENT_STREAM, GROUP, msg_id)
-                print(f"✓ Stored log #{log.id}: {event.get('event_type')} @ {timestamp}")
+
             except Exception as e:
-                print(f"✗ Error storing log: {e}")
-                import traceback
-                traceback.print_exc()
-                # Still ack the message so we don't get stuck
-                try:
-                    ack(EVENT_STREAM, GROUP, msg_id)
-                except:
-                    pass
+                print(f"Error processing event: {e}")
 
 
 if __name__ == "__main__":
