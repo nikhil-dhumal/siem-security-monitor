@@ -31,22 +31,27 @@ SECRET_KEY = "django-insecure-sf_mo!t)e7c8k$f0z3+278x+lq16e1ida46g34=g8ty@&!(x=m
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",  # ← ADD THIS (must be FIRST)
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",  # ← ADD THIS if not present
+    "corsheaders",     # ← ADD THIS if not present
+    "channels",        # ← ADD THIS if not present
     "logs",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",  # Must be first for CORS
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -73,7 +78,22 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
+# Remove or comment out this line:
+# WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+
+# ── Channels/Redis layer for Django Channels ──
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+            'capacity': 1500,        # max messages in channel
+            'expiry':   10,          # seconds before message expires
+        },
+    },
+}
 
 
 # Database
@@ -126,3 +146,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+# ── CORS headers for WebSocket (if using corsheaders) ─
+CORS_ALLOW_ALL_ORIGINS = True   # for development only
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",     # React dev server
+    "http://127.0.0.1:5173",
+]

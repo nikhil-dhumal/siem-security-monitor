@@ -4,6 +4,7 @@ import random
 import time
 import requests
 import socket
+from datetime import datetime, timezone
 from log_generators import (
     gen_auth_log,
     gen_web_access_log,
@@ -27,7 +28,7 @@ GENERATOR_MAP = {
 hostname = socket.gethostname()
 
 AGENT_CONFIG_PATH = os.getenv("AGENT_CONFIG_PATH", "configs/workstation.yaml")
-AGGREGATOR = os.getenv("AGGREGATOR", "http://localhost:8000/ingest")
+AGGREGATOR = os.getenv("AGGREGATOR", "http://localhost:8001/ingest")
 
 with open(AGENT_CONFIG_PATH) as f:
     agent_config = yaml.safe_load(f)

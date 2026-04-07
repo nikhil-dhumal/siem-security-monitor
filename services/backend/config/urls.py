@@ -15,8 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.http import JsonResponse
+
+def root_view(request):
+    return JsonResponse({"status": "ok", "message": "SIEM API is running"})
 
 urlpatterns = [
+    path('', root_view),
     path('admin/', admin.site.urls),
+    path('api/logs/', include('logs.urls')),
 ]
