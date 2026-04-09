@@ -1,50 +1,97 @@
-import { useState } from 'react';
-import MetricCards    from '../components/MetricCards.jsx';
-import SparklineChart from '../components/SparklineChart.jsx';
-import { CategoryDonut, TopEventsBar } from '../components/CategoryDonut.jsx';
-import WorldThreatMap from '../components/WorldThreatMap.jsx';
-import { TopIPsTable, LogTable } from '../components/LogTable.jsx';
-import LiveAlertFeed  from '../components/LiveAlertFeed.jsx';
-import SecurityAlerts from '../components/SecurityAlerts.jsx';
-import Card           from '../components/common/Card.jsx';
-import { CardTitle }  from '../components/common/Card.jsx';
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link } from "react-router-dom";
+import logsApi from "../api/logsApi";
+import alertsApi from "../api/alertsApi";
+import {
+  setLogs,
+  setLogsLoading,
+  setLogsError,
+} from "../features/logs/logsSlice";
+import {
+  setAlerts,
+  setAlertsLoading,
+  setAlertsError,
+} from "../features/alerts/alertsSlice";
+import TopBar from "../components/layout/TopBar";
+import LogTable from "../components/LogTable";
+import AlertTable from "../components/AlertTable";
+import IncidentTable from "../components/IncidentTable";
+import ThreatMap from "../components/ThreatMap";
 
-export default function Dashboard({ hours }) {
-  const [drillIP, setDrillIP] = useState('');
+const Dashboard = () => {
+  const dispatch = useDispatch();
+  const logs = useSelector((state) => state.logs.list || []);
+  const alerts = useSelector((state) => state.alerts.list || []);
+
+  const displayLogs = logs.slice(0, 10);
+  const displayAlerts = alerts.slice(0, 10);
+
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      dispatch(setLogsLoading(true));
+      dispatch(setAlertsLoading(true));
+
+      const { response: logResponse, err: logErr } = await logsApi.fetchLogs({
+        page_size: 20,
+      });
+      if (logErr) {
+        dispatch(setLogsError(logErr?.message || "Failed to fetch logs"));
+      } else {
+        dispatch(setLogs(logResponse?.results || logResponse || []));
+      }
+      dispatch(setLogsLoading(false));
+
+      const { response: alertResponse, err: alertErr } =
+        await alertsApi.fetchAlerts({ page_size: 20 });
+      if (alertErr) {
+        dispatch(setAlertsError(alertErr?.message || "Failed to fetch alerts"));
+      } else {
+        dispatch(setAlerts(alertResponse?.results || alertResponse || []));
+      }
+      dispatch(setAlertsLoading(false));
+    };
+
+    loadDashboardData();
+  }, [dispatch]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className="min-h-screen bg-white">
+      <TopBar title="SIEM Dashboard" />
+      <div className="px-6 pb-6 space-y-6">
+        <section className="rounded-lg border border-gray-200 bg-white p-6 shadow">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Incident Summary
+          </h2>
+          <IncidentTable />
+        </section>
 
-      <MetricCards hours={hours} />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow h-96 flex flex-col overflow-hidden">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+              Recent Logs
+            </h2>
+            <LogTable logs={displayLogs} />
+          </section>
+          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow h-96 flex flex-col overflow-hidden">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+              Latest Alerts
+            </h2>
+            <AlertTable alerts={displayAlerts} />
+          </section>
+        </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 230px 230px', gap: 12 }}>
-        <SparklineChart hours={hours} />
-        <CategoryDonut  hours={hours} />
-        <TopEventsBar   hours={hours} />
+        <section className="rounded-lg border border-gray-200 bg-white p-6 shadow h-[60vh] overflow-hidden">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">
+            Threat Map
+          </h2>
+          <div className="h-[calc(60vh-6rem)]">
+            <ThreatMap />
+          </div>
+        </section>
       </div>
-
-      {/* Security Alerts Dashboard */}
-      <SecurityAlerts hours={hours} />
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 12 }}>
-        <WorldThreatMap hours={hours} onIPClick={ip => setDrillIP(ip)} />
-
-        <LiveAlertFeed maxLogs={25} />
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 12 }}>
-        <TopIPsTable hours={hours} onIPClick={ip => setDrillIP(ip)} />
-
-        <Card>
-          <CardTitle right={drillIP ? `Filtered: ${drillIP}` : undefined}>
-            Log explorer
-          </CardTitle>
-          <LogTable hours={hours} initialSrcIP={drillIP} />
-        </Card>
-      </div>
-
     </div>
   );
-}
+};
 
-export { Dashboard };
+export default Dashboard;
