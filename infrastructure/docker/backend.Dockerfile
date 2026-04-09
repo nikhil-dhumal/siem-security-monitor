@@ -3,11 +3,13 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY services/backend ./services/backend
+COPY services/backend/requirements.txt ./services/backend/requirements.txt
 COPY shared ./shared
+COPY scripts/start_backend.sh /app/start_backend.sh
+RUN pip install --no-cache-dir -r ./services/backend/requirements.txt
+RUN chmod +x /app/start_backend.sh
 
-RUN pip install --no-cache-dir django psycopg2-binary redis
-
+ENV PYTHONPATH=/app:/app/services/backend
 ENV DJANGO_SETTINGS_MODULE=config.settings
-ENV PYTHONPATH=/app/services/backend:/app
 
-CMD ["sh", "-c", "python services/backend/manage.py migrate && python services/backend/manage.py start_consumer"]
+CMD ["/app/start_backend.sh"]
