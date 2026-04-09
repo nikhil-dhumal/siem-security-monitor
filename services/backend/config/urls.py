@@ -16,13 +16,20 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.http import JsonResponse
+from rest_framework.routers import DefaultRouter
+from logs.views import LogEventViewSet
+from alerts.views import AlertViewSet, IncidentViewSet
+from detection.views import RuleConfigViewSet
 
-def root_view(request):
-    return JsonResponse({"status": "ok", "message": "SIEM API is running"})
+router = DefaultRouter()
+router.register(r'logs', LogEventViewSet)
+router.register(r'alerts', AlertViewSet)
+router.register(r'incidents', IncidentViewSet)
+router.register(r'rules', RuleConfigViewSet)
 
 urlpatterns = [
-    path('', root_view),
     path('admin/', admin.site.urls),
-    path('api/logs/', include('logs.urls')),
+    path('api/', include(router.urls)),
+    path('api/analytics/', include('logs.urls')),
+    path('api/detection/', include('detection.urls')),
 ]

@@ -1,46 +1,30 @@
 from django.db import models
 
-
-class Log(models.Model):
-    timestamp = models.DateTimeField(null=True)
-    host = models.CharField(max_length=100, null=True)
-    category = models.CharField(max_length=50)
-    event_type = models.CharField(max_length=50)
-    outcome = models.CharField(max_length=20, null=True)
-    user = models.CharField(max_length=100, null=True)
-    src_ip = models.GenericIPAddressField(null=True)
-    dst_ip = models.GenericIPAddressField(null=True)
-    src_port = models.IntegerField(null=True)
-    dst_port = models.IntegerField(null=True)
-    pid = models.IntegerField(null=True)
-    command = models.TextField(null=True)
-    file = models.TextField(null=True)
-    proto = models.CharField(max_length=20, null=True)
-    domain = models.CharField(max_length=255, null=True)
-    raw_log = models.TextField()
-    raw = models.JSONField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-
-class Alert(models.Model):
-    SEVERITY_CHOICES = [
-        ("low", "Low"),
-        ("medium", "Medium"),
-        ("high", "High"),
-        ("critical", "Critical"),
-    ]
-
-    rule_id = models.CharField(max_length=50)
-    rule_name = models.CharField(max_length=100)
-    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES)
-    description = models.TextField()
-    triggered_at = models.DateTimeField()
-    event = models.JSONField()
-    extra = models.JSONField(null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+class LogEvent(models.Model):
+    timestamp = models.DateTimeField(null=True, blank=True)
+    host = models.CharField(max_length=255, null=True, blank=True)
+    category = models.CharField(max_length=100, null=True, blank=True)
+    event_type = models.CharField(max_length=100, null=True, blank=True)
+    outcome = models.CharField(max_length=50, null=True, blank=True)
+    user = models.CharField(max_length=255, null=True, blank=True)
+    src_ip = models.GenericIPAddressField(null=True, blank=True)
+    dst_ip = models.GenericIPAddressField(null=True, blank=True)
+    src_port = models.IntegerField(null=True, blank=True)
+    dst_port = models.IntegerField(null=True, blank=True)
+    pid = models.IntegerField(null=True, blank=True)
+    command = models.TextField(null=True, blank=True)
+    file_path = models.TextField(null=True, blank=True)
+    proto = models.CharField(max_length=10, null=True, blank=True)
+    domain = models.CharField(max_length=255, null=True, blank=True)
+    raw_log = models.TextField(null=True, blank=True)
+    agent_id = models.CharField(max_length=255, null=True, blank=True)
+    agent_type = models.CharField(max_length=100, null=True, blank=True)
+    ingested_at = models.DateTimeField(null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
 
     class Meta:
-        ordering = ["-triggered_at"]
+        ordering = ['-timestamp']
 
     def __str__(self):
-        return f"[{self.severity.upper()}] {self.rule_id} - {self.triggered_at}"
+        return f"{self.timestamp} - {self.event_type}: {self.raw_log[:50]}"

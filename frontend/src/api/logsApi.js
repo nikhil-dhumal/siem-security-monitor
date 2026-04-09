@@ -1,95 +1,118 @@
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8888';
-const API  = `${BASE}/api/logs`;
+import publicClient from './client/public.client';
 
-async function apiFetch(url) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!res.ok) throw new Error(`API ${res.status}: ${url}`);
-  return res.json();
-}
+const logsEndpoints = {
+  list: 'logs/',
+  detail: (id) => `logs/${id}/`,
+  summary: 'analytics/summary/',
+  timeline: 'analytics/timeline/',
+  categories: 'analytics/categories/',
+  eventTypes: 'analytics/event-types/',
+  geo: 'analytics/geo/',
+  topIps: 'analytics/top-ips/',
+  topHosts: 'analytics/top-hosts/',
+  topUsers: 'analytics/top-users/',
+  outcomes: 'analytics/outcomes/',
+};
 
-function qs(params = {}) {
-  const q = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== null && v !== undefined && v !== '' && v !== false) {
-      q.set(k, v);
+const logsApi = {
+  fetchLogs: async (params = {}) => {
+    try {
+      const response = await publicClient.get(logsEndpoints.list, { params });
+      return { response };
+    } catch (err) {
+      return { err };
     }
-  }
-  const s = q.toString();
-  return s ? `?${s}` : '';
-}
+  },
 
-export function fetchSummary({ hours = 24 } = {}) {
-  return apiFetch(`${API}/summary/${qs({ hours })}`);
-}
+  fetchLogById: async (id) => {
+    try {
+      const response = await publicClient.get(logsEndpoints.detail(id));
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 
-export function fetchLogs({
-  hours      = 24,
-  category   = null,
-  event_type = null,
-  outcome    = null,
-  src_ip     = null,
-  host       = null,
-  search     = null,
-  page       = 1,
-  page_size  = 50,
-} = {}) {
-  return apiFetch(
-    `${API}/${qs({ hours, category, event_type, outcome, src_ip, host, search, page, page_size })}`
-  );
-}
+  fetchSummary: async (params = {}) => {
+    try {
+      const response = await publicClient.get(logsEndpoints.summary, { params });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 
-export function fetchLogDetail(id) {
-  return apiFetch(`${API}/${id}/`);
-}
+  fetchTimeline: async (params = {}) => {
+    try {
+      const response = await publicClient.get(logsEndpoints.timeline, { params });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 
-export function fetchTimeline({ hours = 24, bucket = 'hour' } = {}) {
-  return apiFetch(`${API}/timeline/${qs({ hours, bucket })}`);
-}
+  fetchCategories: async (params = {}) => {
+    try {
+      const response = await publicClient.get(logsEndpoints.categories, { params });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 
-export function fetchCategories({ hours = 24 } = {}) {
-  return apiFetch(`${API}/categories/${qs({ hours })}`);
-}
+  fetchEventTypes: async (params = {}) => {
+    try {
+      const response = await publicClient.get(logsEndpoints.eventTypes, { params });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 
-export function fetchEventTypes({ hours = 24 } = {}) {
-  return apiFetch(`${API}/event-types/${qs({ hours })}`);
-}
+  fetchGeo: async (params = {}) => {
+    try {
+      const response = await publicClient.get(logsEndpoints.geo, { params });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 
-export function fetchOutcomes({ hours = 24 } = {}) {
-  return apiFetch(`${API}/outcomes/${qs({ hours })}`);
-}
+  fetchTopIps: async (params = {}) => {
+    try {
+      const response = await publicClient.get(logsEndpoints.topIps, { params });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 
-export function fetchGeoIPs({ hours = 24 } = {}) {
-  return apiFetch(`${API}/geo/${qs({ hours })}`);
-}
+  fetchTopHosts: async (params = {}) => {
+    try {
+      const response = await publicClient.get(logsEndpoints.topHosts, { params });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 
-export function fetchTopIPs({ hours = 24, limit = 20 } = {}) {
-  return apiFetch(`${API}/top-ips/${qs({ hours, limit })}`);
-}
+  fetchTopUsers: async (params = {}) => {
+    try {
+      const response = await publicClient.get(logsEndpoints.topUsers, { params });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
 
-export function fetchTopHosts({ hours = 24, limit = 10 } = {}) {
-  return apiFetch(`${API}/top-hosts/${qs({ hours, limit })}`);
-}
+  fetchOutcomes: async (params = {}) => {
+    try {
+      const response = await publicClient.get(logsEndpoints.outcomes, { params });
+      return { response };
+    } catch (err) {
+      return { err };
+    }
+  },
+};
 
-export function fetchTopUsers({ hours = 24, limit = 10 } = {}) {
-  return apiFetch(`${API}/top-users/${qs({ hours, limit })}`);
-}
-
-export async function resolveGeoIPs(ips = []) {
-  if (!ips.length) return [];
-  const body = ips.slice(0, 100).map(ip => ({
-    query: ip,
-    fields: 'query,country,countryCode,regionName,city,isp,lat,lon,status',
-  }));
-  try {
-    const res = await fetch('http://ip-api.com/batch', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(body),
-    });
-    return res.ok ? res.json() : [];
-  } catch {
-    return [];
-  }
-}
+export default logsApi;

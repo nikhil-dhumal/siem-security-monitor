@@ -5,6 +5,6 @@ WORKDIR /app
 COPY services/agent ./agent
 COPY configs ./configs
 
-RUN pip install --no-cache-dir pyyaml requests
+RUN pip install --no-cache-dir -r ./agent/requirements.txt
 
 CMD ["python", "-u", "agent/agent.py"]
