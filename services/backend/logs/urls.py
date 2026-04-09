@@ -10,6 +10,5 @@ urlpatterns = [
     path('top-ips/', views.TopIPsView.as_view()),
     path('top-hosts/', views.TopHostsView.as_view()),
     path('top-users/', views.TopUsersView.as_view()),
-    path('', views.LogListView.as_view()),
     path('outcomes/', views.outcomes),
 ]

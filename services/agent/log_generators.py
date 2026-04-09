@@ -41,19 +41,19 @@ templates = {
     },
     "web": {
         "page_access": Template(
-            '$src_ip - $user [$timestamp] "$method $path HTTP/1.1" $status $size'
+            "$timestamp $host $src_ip - $user [$timestamp] \"$method $path HTTP/1.1\" $status $size"
         ),
         "login_request": Template(
-            '$src_ip - $user [$timestamp] "POST /login HTTP/1.1" $status $size'
+            "$timestamp $host $src_ip - $user [$timestamp] \"POST /login HTTP/1.1\" $status $size"
         ),
         "admin_access_denied": Template(
-            '$src_ip - - [$timestamp] "GET /admin HTTP/1.1" 403 $size'
+            "$timestamp $host $src_ip - - [$timestamp] \"GET /admin HTTP/1.1\" 403 $size"
         ),
         "directory_traversal": Template(
-            '$src_ip - - [$timestamp] "GET /../../etc/passwd HTTP/1.1" 404 $size'
+            "$timestamp $host $src_ip - - [$timestamp] \"GET /../../etc/passwd HTTP/1.1\" 404 $size"
         ),
         "api_access": Template(
-            '$src_ip - $user [$timestamp] "GET /api/$api HTTP/1.1" $status $size'
+            "$timestamp $host $src_ip - $user [$timestamp] \"GET /api/$api HTTP/1.1\" $status $size"
         ),
     },
     "firewall": {
@@ -174,7 +174,9 @@ def random_ip(agent_type=None):
 
 
 def timestamp():
-    return time.strftime("%b %d %H:%M:%S", time.localtime(time.time()))
+    """Generate ISO 8601 timestamp with timezone (UTC)"""
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).isoformat()
 
 
 def random_src_port():
