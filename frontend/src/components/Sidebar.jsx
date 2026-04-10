@@ -2,11 +2,11 @@ import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/', roles: ['viewer', 'simulator', 'rule_admin'] },
-  { label: 'Analytics', path: '/analytics', roles: ['viewer', 'simulator', 'rule_admin'] },
-  { label: 'Records', path: '/records', roles: ['viewer', 'simulator', 'rule_admin'] },
+  { label: 'Dashboard', path: '/', roles: ['viewer', 'admin', 'simulator'] },
+  { label: 'Analytics', path: '/analytics', roles: ['viewer', 'admin'] },
+  { label: 'History', path: '/records', roles: ['viewer', 'admin'] },
   { label: 'Simulation', path: '/simulation', roles: ['simulator'] },
-  { label: 'Rules', path: '/rules', roles: ['rule_admin'] },
+  { label: 'Rules', path: '/rules', roles: ['admin'] },
 ];
 
 const Sidebar = ({ active }) => {

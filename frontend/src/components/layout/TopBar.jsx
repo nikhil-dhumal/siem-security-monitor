@@ -1,29 +1,26 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { NavLink } from 'react-router-dom';
-import { setDevRole } from '../../features/auth/authSlice';
+import { logout } from '../../features/auth/authSlice';
 
 const navItems = [
-  { to: '/', label: 'Dashboard', roles: ['viewer', 'simulator', 'rule_admin'] },
-  { to: '/analytics', label: 'Analytics', roles: ['viewer', 'simulator', 'rule_admin'] },
-  { to: '/history', label: 'History', roles: ['viewer', 'simulator', 'rule_admin'] },
+  { to: '/', label: 'Dashboard', roles: ['viewer', 'admin'] },
+  { to: '/analytics', label: 'Analytics', roles: ['viewer', 'admin'] },
+  { to: '/records', label: 'History', roles: ['viewer', 'admin'] },
   { to: '/simulation', label: 'Simulation', roles: ['simulator'] },
-  { to: '/rules', label: 'Rules', roles: ['rule_admin'] },
+  { to: '/rules', label: 'Rules', roles: ['admin'] },
 ];
-
-const getRoleFromRoles = (roles) => {
-  if (roles.length === 3) return 'all';
-  if (roles.includes('rule_admin') && !roles.includes('simulator')) return 'rule_admin';
-  if (roles.includes('simulator') && !roles.includes('rule_admin')) return 'simulator';
-  return 'viewer';
-};
 
 const TopBar = ({ title }) => {
   const dispatch = useDispatch();
   const { roles = [], user } = useSelector((state) => state.auth);
-  const currentRole = getRoleFromRoles(roles);
 
-  const handleRoleChange = (e) => {
-    dispatch(setDevRole(e.target.value));
+  const visibleNavItems = navItems.filter((item) =>
+    item.roles.some((r) => roles.includes(r))
+  );
+
+  const handleLogout = () => {
+    dispatch(logout());
+    window.location.href = '/login';
   };
 
   return (
@@ -35,38 +32,32 @@ const TopBar = ({ title }) => {
             <p className="mt-1 text-sm text-gray-600">SIEM Security Monitor Dashboard</p>
           </div>
           <div className="flex items-center gap-4">
-            <select
-              value={currentRole}
-              onChange={handleRoleChange}
-              className="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700"
-            >
-              <option value="viewer">Viewer</option>
-              <option value="rule_admin">Rule Admin</option>
-              <option value="simulator">Simulator</option>
-              <option value="all">Full Access</option>
-            </select>
+            <nav className="flex gap-2">
+              {visibleNavItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `rounded-lg px-4 py-2 text-sm font-medium transition ${
+                      isActive
+                        ? 'bg-blue-500 text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
             <span className="text-sm text-gray-600">{user?.name}</span>
+            <button
+              onClick={handleLogout}
+              className="rounded-lg bg-red-500 px-3 py-1 text-sm font-medium text-white hover:bg-red-600 transition"
+            >
+              Logout
+            </button>
           </div>
         </div>
-        <nav className="mt-4 flex gap-2">
-          {navItems
-            .filter((item) => item.roles.some((r) => roles.includes(r)))
-            .map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `rounded-lg px-4 py-2 text-sm font-medium transition ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-        </nav>
       </div>
     </div>
   );

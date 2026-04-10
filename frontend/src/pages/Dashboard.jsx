@@ -23,6 +23,7 @@ const Dashboard = () => {
   const dispatch = useDispatch();
   const logs = useSelector((state) => state.logs.list || []);
   const alerts = useSelector((state) => state.alerts.list || []);
+  const authState = useSelector((state) => state.auth);
 
   const displayLogs = logs.slice(0, 10);
   const displayAlerts = alerts.slice(0, 10);

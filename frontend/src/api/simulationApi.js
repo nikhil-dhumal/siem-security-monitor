@@ -1,4 +1,4 @@
-import publicClient from './client/public.client';
+import apiClient from './client';
 
 const simulationEndpoints = {
   state: 'detection/simulation/',
@@ -9,7 +9,7 @@ const simulationEndpoints = {
 const simulationApi = {
   fetchSimulationState: async () => {
     try {
-      const response = await publicClient.get(simulationEndpoints.state);
+      const response = await apiClient.get(simulationEndpoints.state);
       return { response };
     } catch (err) {
       return { err };
@@ -18,7 +18,7 @@ const simulationApi = {
 
   updateSimulationConfig: async (data) => {
     try {
-      const response = await publicClient.post(simulationEndpoints.configure, data);
+      const response = await apiClient.post(simulationEndpoints.configure, data);
       return { response };
     } catch (err) {
       return { err };
@@ -27,7 +27,7 @@ const simulationApi = {
 
   triggerSimulation: async (action) => {
     try {
-      const response = await publicClient.post(simulationEndpoints.trigger, { action });
+      const response = await apiClient.post(simulationEndpoints.trigger, { action });
       return { response };
     } catch (err) {
       return { err };

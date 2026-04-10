@@ -1,3 +1,4 @@
-import { privateClient, publicClient } from './client';
+import apiClient from './client';
 
-export { privateClient, publicClient };
+export { apiClient };
+export default apiClient;

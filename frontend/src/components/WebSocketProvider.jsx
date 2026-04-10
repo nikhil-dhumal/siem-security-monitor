@@ -6,8 +6,47 @@ import { addAlert } from '../features/alerts/alertsSlice';
 const WebSocketContext = createContext();
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8002';
-const RECONNECT_DELAY_MS = 5000; // Increased from 2000 to 5000
+const RECONNECT_DELAY_MS = 5000;
 const MAX_RECONNECT_ATTEMPTS = 5;
+const THROTTLE_INTERVAL_MS = 100; // Batch messages every 100ms to prevent render storms
+
+// Helper function to create a throttled dispatcher
+const createThrottledDispatcher = (dispatch, action, throttleInterval) => {
+  let queue = [];
+  let dispatchTimer = null;
+  let lastDispatchTime = 0;
+
+  const flushQueue = () => {
+    if (queue.length > 0) {
+      const itemsToDispatch = queue.splice(0, queue.length);
+      itemsToDispatch.forEach((item) => {
+        dispatch(action(item));
+      });
+      lastDispatchTime = Date.now();
+    }
+    dispatchTimer = null;
+  };
+
+  const throttledHandler = (payload) => {
+    queue.push(payload);
+    const timeSinceLastDispatch = Date.now() - lastDispatchTime;
+
+    if (timeSinceLastDispatch >= throttleInterval) {
+      // Enough time has passed, dispatch immediately
+      if (dispatchTimer) {
+        clearTimeout(dispatchTimer);
+        dispatchTimer = null;
+      }
+      flushQueue();
+    } else if (!dispatchTimer) {
+      // Schedule a flush for later
+      const delay = throttleInterval - timeSinceLastDispatch;
+      dispatchTimer = setTimeout(flushQueue, delay);
+    }
+  };
+
+  return throttledHandler;
+};
 
 const createWebSocket = (url, onMessage, onOpen, onClose, onError) => {
   const socket = new WebSocket(url);
@@ -25,8 +64,8 @@ const createWebSocket = (url, onMessage, onOpen, onClose, onError) => {
     onOpen();
   };
 
-  socket.onclose = () => {
-    onClose();
+  socket.onclose = (event) => {
+    onClose(event);
   };
 
   socket.onerror = (error) => {
@@ -40,42 +79,42 @@ export const WebSocketProvider = ({ children }) => {
   const dispatch = useDispatch();
   const logsSocketRef = useRef(null);
   const alertsSocketRef = useRef(null);
-  const reconnectTimerRef = useRef(null);
+  const reconnectTimersRef = useRef({ logs: null, alerts: null });
   const shouldReconnectRef = useRef(true);
-  const logsReconnectCountRef = useRef(0);
-  const alertsReconnectCountRef = useRef(0);
+  const reconnectCountsRef = useRef({ logs: 0, alerts: 0 });
 
   useEffect(() => {
     shouldReconnectRef.current = true;
-    logsReconnectCountRef.current = 0;
-    alertsReconnectCountRef.current = 0;
+    reconnectCountsRef.current = { logs: 0, alerts: 0 };
 
-const connect = (path, socketRef, messageHandler, reconnectCountRef) => {
-      if (reconnectCountRef.current >= MAX_RECONNECT_ATTEMPTS) {
+    const connect = (path, socketRef, messageHandler, key) => {
+      const existingSocket = socketRef.current;
+      if (existingSocket && existingSocket.readyState !== WebSocket.CLOSED && existingSocket.readyState !== WebSocket.CLOSING) {
+        return;
+      }
+
+      if (reconnectCountsRef.current[key] >= MAX_RECONNECT_ATTEMPTS) {
         console.warn(`Max reconnection attempts reached for ${path}, stopping reconnection`);
         return;
       }
 
       const url = `${WS_URL}${path}`;
-      console.log(`Attempting WebSocket connection to ${url} (attempt ${reconnectCountRef.current + 1}/${MAX_RECONNECT_ATTEMPTS})`);
-      
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
+      console.info(`Opening WebSocket to ${url} (attempt ${reconnectCountsRef.current[key] + 1}/${MAX_RECONNECT_ATTEMPTS})`);
 
       const socket = createWebSocket(
         url,
         messageHandler,
         () => {
           console.info('WebSocket connected', url);
-          reconnectCountRef.current = 0; // Reset on successful connection
+          reconnectCountsRef.current[key] = 0;
         },
         () => {
           console.info('WebSocket closed', url);
-          if (shouldReconnectRef.current && reconnectCountRef.current < MAX_RECONNECT_ATTEMPTS) {
-            reconnectCountRef.current++;
-            reconnectTimerRef.current = window.setTimeout(
-              () => connect(path, socketRef, messageHandler, reconnectCountRef),
+          if (!shouldReconnectRef.current) return;
+          if (reconnectCountsRef.current[key] < MAX_RECONNECT_ATTEMPTS) {
+            reconnectCountsRef.current[key] += 1;
+            reconnectTimersRef.current[key] = window.setTimeout(
+              () => connect(path, socketRef, messageHandler, key),
               RECONNECT_DELAY_MS
             );
           }
@@ -88,14 +127,20 @@ const connect = (path, socketRef, messageHandler, reconnectCountRef) => {
       socketRef.current = socket;
     };
 
-    connect('/ws/logs/', logsSocketRef, (payload) => dispatch(addLog(payload)), logsReconnectCountRef);
-    connect('/ws/alerts/', alertsSocketRef, (payload) => dispatch(addAlert(payload)), alertsReconnectCountRef);
+    // Create throttled dispatchers to prevent render storms
+    const throttledLogDispatcher = createThrottledDispatcher(dispatch, addLog, THROTTLE_INTERVAL_MS);
+    const throttledAlertDispatcher = createThrottledDispatcher(dispatch, addAlert, THROTTLE_INTERVAL_MS);
+
+    connect('/ws/logs/', logsSocketRef, throttledLogDispatcher, 'logs');
+    connect('/ws/alerts/', alertsSocketRef, throttledAlertDispatcher, 'alerts');
 
     return () => {
       shouldReconnectRef.current = false;
-      if (reconnectTimerRef.current) {
-        window.clearTimeout(reconnectTimerRef.current);
-      }
+      Object.values(reconnectTimersRef.current).forEach((timerId) => {
+        if (timerId) {
+          window.clearTimeout(timerId);
+        }
+      });
       logsSocketRef.current?.close();
       alertsSocketRef.current?.close();
     };

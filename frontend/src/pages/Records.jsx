@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import logsApi from '../api/logsApi';
 import alertsApi from '../api/alertsApi';
+import incidentsApi from '../api/incidentsApi';
 import TopBar from '../components/layout/TopBar';
 import LogTable from '../components/LogTable';
 import AlertTable from '../components/AlertTable';
@@ -9,13 +11,16 @@ import IncidentTable from '../components/IncidentTable';
 const ITEMS_PER_PAGE = 50;
 
 const Records = () => {
+  const authState = useSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState('logs');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [logs, setLogs] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [incidents, setIncidents] = useState([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
+  const [loadingIncidents, setLoadingIncidents] = useState(false);
   const [error, setError] = useState(null);
 
   const totalPages = useMemo(() => Math.ceil(totalCount / ITEMS_PER_PAGE) || 1, [totalCount]);
@@ -80,6 +85,36 @@ const Records = () => {
     fetchAlerts();
   }, [activeTab, page]);
 
+  // Lazy load incidents only when incidents tab is active
+  useEffect(() => {
+    if (activeTab !== 'incidents') return;
+
+    const fetchIncidents = async () => {
+      setLoadingIncidents(true);
+      setError(null);
+      try {
+        const { response, err } = await incidentsApi.fetchIncidents({
+          page: page,
+          page_size: ITEMS_PER_PAGE,
+        });
+
+        if (err) {
+          setError(err?.message || 'Failed to fetch incidents');
+          setIncidents([]);
+        } else {
+          setIncidents(response?.results || response || []);
+          setTotalCount(response?.count || 0);
+        }
+      } catch (e) {
+        setError('An error occurred while fetching incidents');
+        setIncidents([]);
+      }
+      setLoadingIncidents(false);
+    };
+
+    fetchIncidents();
+  }, [activeTab, page]);
+
   const handlePrevious = () => {
     if (page > 1) {
       setPage(page - 1);
@@ -101,40 +136,40 @@ const Records = () => {
     setError(null);
   };
 
-  const isLoading = activeTab === 'logs' ? loadingLogs : activeTab === 'alerts' ? loadingAlerts : false;
+  const isLoading = activeTab === 'logs' ? loadingLogs : activeTab === 'alerts' ? loadingAlerts : activeTab === 'incidents' ? loadingIncidents : false;
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <TopBar title="Records & History" />
       <div className="px-6 pb-6 flex flex-col flex-1 overflow-hidden">
         {/* Tab Navigation */}
-        <div className="flex gap-4 mb-4 border-b border-gray-200 flex-shrink-0">
+        <div className="flex gap-2 pt-2 mb-3 flex-shrink-0">
           <button
             onClick={() => handleTabChange('logs')}
-            className={`px-4 py-2 font-medium text-sm border-b-2 transition ${
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
               activeTab === 'logs'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'bg-blue-500 text-white'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
             Logs
           </button>
           <button
             onClick={() => handleTabChange('alerts')}
-            className={`px-4 py-2 font-medium text-sm border-b-2 transition ${
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
               activeTab === 'alerts'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'bg-blue-500 text-white'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
             Alerts
           </button>
           <button
             onClick={() => handleTabChange('incidents')}
-            className={`px-4 py-2 font-medium text-sm border-b-2 transition ${
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
               activeTab === 'incidents'
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'bg-blue-500 text-white'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
             Incidents
@@ -198,8 +233,20 @@ const Records = () => {
           {activeTab === 'incidents' && (
             <div className="flex flex-col h-full p-4 overflow-hidden">
               <h2 className="text-lg font-semibold text-gray-900 mb-3 flex-shrink-0">All Incidents</h2>
-              <div className="flex-1">
-                <IncidentTable />
+              <div className="flex-1 overflow-hidden">
+                {isLoading && incidents.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    Loading incidents...
+                  </div>
+                ) : incidents.length > 0 ? (
+                  <div className="h-full overflow-y-auto">
+                    <IncidentTable incidents={incidents} />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    No incidents found
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -1,4 +1,4 @@
-import publicClient from './client/public.client';
+import apiClient from './client';
 
 const incidentEndpoints = {
   list: 'incidents/',
@@ -8,7 +8,7 @@ const incidentEndpoints = {
 const incidentsApi = {
   fetchIncidents: async (params = {}) => {
     try {
-      const response = await publicClient.get(incidentEndpoints.list, { params });
+      const response = await apiClient.get(incidentEndpoints.list, { params });
       return { response };
     } catch (err) {
       return { err };

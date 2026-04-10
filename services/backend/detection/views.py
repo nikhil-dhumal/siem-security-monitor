@@ -7,7 +7,6 @@ import os
 from .models import RuleConfig
 from .serializers import RuleConfigSerializer
 
-# Redis for agent config updates
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
@@ -18,7 +17,7 @@ class RuleConfigViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'patch', 'put', 'head', 'options']
 
 SIMULATION_STATE = {
-    'status': 'ready',
+    'status': 'stopped',
     'action': None,
     'template': None,
     'agent_probabilities': {
@@ -67,7 +66,6 @@ SIMULATION_STATE = {
             'config_change': 0.04,
         },
     },
-    'event_rate': 1,
 }
 
 class SimulationStateView(APIView):
@@ -79,23 +77,20 @@ class SimulationConfigureView(APIView):
         payload = request.data
         agent_probabilities = payload.get('agentProbabilities', {})
         detailed_probabilities = payload.get('detailedProbabilities', {})
-        event_rate = payload.get('eventRate', 1)
 
         SIMULATION_STATE['agent_probabilities'] = agent_probabilities
         SIMULATION_STATE['detailed_probabilities'] = detailed_probabilities
-        SIMULATION_STATE['event_rate'] = event_rate
-        SIMULATION_STATE['status'] = SIMULATION_STATE.get('status', 'ready')
+        SIMULATION_STATE['status'] = SIMULATION_STATE.get('status', 'stopped')
 
         config_update = {
             'type': 'config_update',
             'log_category_weights': agent_probabilities,
             'log_probabilities': detailed_probabilities,
-            'log_rate_per_sec': event_rate,
         }
         try:
             redis_client.publish('simulation_config', json.dumps(config_update))
         except Exception as e:
-            print(f"Failed to publish simulation config: {e}")
+            pass
 
         return Response({
             'status': 'configured',
@@ -115,7 +110,7 @@ class SimulationTriggerView(APIView):
         elif action == 'stop':
             SIMULATION_STATE['status'] = 'stopped'
         elif action == 'reset':
-            SIMULATION_STATE['status'] = 'ready'
+            SIMULATION_STATE['status'] = SIMULATION_STATE.get('status', 'stopped')
 
         control_payload = {
             'type': 'control',
@@ -125,7 +120,7 @@ class SimulationTriggerView(APIView):
         try:
             redis_client.publish('simulation_control', json.dumps(control_payload))
         except Exception as e:
-            print(f"Failed to publish simulation control: {e}")
+            pass
 
         return Response({
             'status': 'triggered',

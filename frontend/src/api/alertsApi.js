@@ -1,4 +1,4 @@
-import publicClient from './client/public.client';
+import apiClient from './client/private.client';
 
 const alertEndpoints = {
   list: 'alerts/',
@@ -8,7 +8,7 @@ const alertEndpoints = {
 const alertsApi = {
   fetchAlerts: async (params = {}) => {
     try {
-      const response = await publicClient.get(alertEndpoints.list, { params });
+      const response = await apiClient.get(alertEndpoints.list, { params });
       return { response };
     } catch (err) {
       return { err };
@@ -17,7 +17,7 @@ const alertsApi = {
 
   fetchAlertById: async (id) => {
     try {
-      const response = await publicClient.get(alertEndpoints.detail(id));
+      const response = await apiClient.get(alertEndpoints.detail(id));
       return { response };
     } catch (err) {
       return { err };

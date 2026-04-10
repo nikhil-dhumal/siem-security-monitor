@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 
 const SimulationPanel = ({ onAction, config, onConfigChange, simulation, isSaving, saveStatus }) => {
   const [localConfig, setLocalConfig] = useState({
-    eventRate: 1,
     agentProbabilities: {
       auth: 0.2,
       network: 0.15,
@@ -93,7 +92,6 @@ const SimulationPanel = ({ onAction, config, onConfigChange, simulation, isSavin
   useEffect(() => {
     if (config) {
       setLocalConfig({
-        eventRate: config.eventRate || 1,
         agentProbabilities: {
           auth: config.agentProbabilities?.auth ?? 0.2,
           network: config.agentProbabilities?.network ?? 0.15,
@@ -185,12 +183,6 @@ const SimulationPanel = ({ onAction, config, onConfigChange, simulation, isSavin
       };
     }
 
-    setLocalConfig(updated);
-    onConfigChange?.(updated);
-  };
-
-  const handleRateChange = (value) => {
-    const updated = { ...localConfig, eventRate: Number(value) };
     setLocalConfig(updated);
     onConfigChange?.(updated);
   };
@@ -554,29 +546,7 @@ const SimulationPanel = ({ onAction, config, onConfigChange, simulation, isSavin
             </div>
           </div>
 
-          {/* Event Rate (separate box BELOW) */}
-          <div className="rounded-lg border border-gray-200 bg-white p-4 flex flex-col">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">
-              Event Rate
-            </h3>
-            <div className="rounded bg-gray-50 p-2">
-              <div className="flex items-center justify-between text-xs text-gray-700 mb-1">
-                <span>Rate multiplier</span>
-                <span className="font-semibold">
-                  {localConfig.eventRate.toFixed(1)}x
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0.5"
-                max="5"
-                step="0.5"
-                value={localConfig.eventRate}
-                onChange={(e) => handleRateChange(e.target.value)}
-                className="w-full"
-              />
-            </div>
-          </div>
+
         </div>
       </div>
 
