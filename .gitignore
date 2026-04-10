@@ -10,6 +10,9 @@ db.sqlite3
 
 
 # Frontend
+# Vite cache
+.vite/
+
 # Logs
 *.log
 npm-debug.log*
