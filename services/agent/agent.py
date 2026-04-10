@@ -44,7 +44,6 @@ log_rate_per_sec = agent_config.get("log_rate_per_sec", 1) / 2  # Reduce speed b
 log_category_weights = agent_config.get("log_category_weights", {})
 log_probabilities = agent_config.get("log_probabilities", {})
 
-# Redis for config updates
 redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
 is_running = threading.Event()
@@ -53,51 +52,213 @@ DEFAULT_LOG_RATE_PER_SEC = agent_config.get("log_rate_per_sec", 1) / 2
 DEFAULT_LOG_CATEGORY_WEIGHTS = log_category_weights.copy()
 DEFAULT_LOG_PROBABILITIES = json.loads(json.dumps(log_probabilities))
 
+TEMPLATE_PROFILES = {
+    "Brute Force": {
+        "log_category_weights": {
+            "auth": 0.7,
+            "web": 0.1,
+            "firewall": 0.05,
+            "dns": 0.05,
+            "process": 0.05,
+            "file_access": 0.05,
+            "vpn": 0.0,
+        },
+        "log_probabilities": {
+            "auth": {
+                "ssh_login_failure": 50,
+                "ssh_login_success": 10,
+                "invalid_user": 20,
+                "sudo_command": 10,
+                "user_logout": 10,
+            },
+        },
+    },
+    "Failed Logins": {
+        "log_category_weights": {
+            "auth": 0.6,
+            "web": 0.15,
+            "firewall": 0.05,
+            "dns": 0.05,
+            "process": 0.05,
+            "file_access": 0.05,
+            "vpn": 0.05,
+        },
+        "log_probabilities": {
+            "auth": {
+                "ssh_login_failure": 70,
+                "ssh_login_success": 10,
+                "invalid_user": 10,
+                "sudo_command": 5,
+                "user_logout": 5,
+            },
+        },
+    },
+    "Suspicious IP": {
+        "log_category_weights": {
+            "auth": 0.1,
+            "web": 0.15,
+            "firewall": 0.35,
+            "dns": 0.2,
+            "process": 0.1,
+            "file_access": 0.05,
+            "vpn": 0.05,
+        },
+        "log_probabilities": {
+            "firewall": {
+                "block_tcp": 40,
+                "allow_tcp": 10,
+                "dns_block": 30,
+                "port_scan_block": 20,
+            },
+            "dns": {
+                "suspicious_domain": 60,
+                "dns_query": 20,
+                "internal_lookup": 10,
+                "cloud_lookup": 5,
+                "dns_failure": 5,
+            },
+        },
+    },
+    "DDoS Burst": {
+        "log_category_weights": {
+            "auth": 0.05,
+            "web": 0.2,
+            "firewall": 0.35,
+            "dns": 0.1,
+            "process": 0.05,
+            "file_access": 0.05,
+            "vpn": 0.2,
+        },
+        "log_probabilities": {
+            "firewall": {
+                "block_tcp": 30,
+                "allow_tcp": 20,
+                "port_scan_block": 30,
+                "http_block": 20,
+            },
+            "vpn": {
+                "vpn_connect": 40,
+                "vpn_connect_failed": 10,
+                "vpn_disconnect": 20,
+                "vpn_traffic": 30,
+            },
+        },
+    },
+    "Data Exfil": {
+        "log_category_weights": {
+            "auth": 0.05,
+            "web": 0.1,
+            "firewall": 0.05,
+            "dns": 0.05,
+            "process": 0.1,
+            "file_access": 0.55,
+            "vpn": 0.1,
+        },
+        "log_probabilities": {
+            "file_access": {
+                "file_read": 40,
+                "file_write": 25,
+                "sensitive_file_read": 20,
+                "file_delete": 10,
+                "config_change": 5,
+            },
+            "process": {
+                "normal_process": 40,
+                "admin_command": 20,
+                "network_scan": 10,
+                "reverse_shell": 10,
+                "file_download": 20,
+            },
+        },
+    },
+    "Privilege Esc": {
+        "log_category_weights": {
+            "auth": 0.35,
+            "web": 0.05,
+            "firewall": 0.05,
+            "dns": 0.05,
+            "process": 0.35,
+            "file_access": 0.1,
+            "vpn": 0.05,
+        },
+        "log_probabilities": {
+            "auth": {
+                "ssh_login_success": 20,
+                "ssh_login_failure": 20,
+                "invalid_user": 5,
+                "sudo_command": 40,
+                "user_logout": 15,
+            },
+            "process": {
+                "normal_process": 30,
+                "admin_command": 25,
+                "network_scan": 10,
+                "reverse_shell": 10,
+                "file_download": 25,
+            },
+        },
+    },
+}
+
+
+def apply_template_profile(template_name):
+    global log_category_weights, log_probabilities
+    profile = TEMPLATE_PROFILES.get(template_name)
+    if not profile:
+        return
+
+    if 'log_category_weights' in profile:
+        filtered_weights = {}
+        for category, weight in profile['log_category_weights'].items():
+            if category in DEFAULT_LOG_PROBABILITIES:
+                filtered_weights[category] = weight
+        
+        total_weight = sum(filtered_weights.values())
+        if total_weight > 0:
+            log_category_weights.clear()
+            for category, weight in filtered_weights.items():
+                log_category_weights[category] = weight / total_weight
+
+    if 'log_probabilities' in profile:
+        for category, probs in profile['log_probabilities'].items():
+            if category in log_probabilities:
+                log_probabilities[category].clear()
+                log_probabilities[category].update(probs)
+            else:
+                log_probabilities[category] = probs.copy()
+
 
 def process_config_update(config_update):
     global log_probabilities, log_category_weights, log_rate_per_sec
     if 'log_probabilities' in config_update:
         log_probabilities = config_update['log_probabilities']
-        print(f"Updated log_probabilities: {log_probabilities}")
     if 'log_category_weights' in config_update:
         log_category_weights = config_update['log_category_weights']
-        print(f"Updated log_category_weights: {log_category_weights}")
-    if 'log_rate_per_sec' in config_update:
-        log_rate_per_sec = config_update['log_rate_per_sec'] / 2  # Keep the /2 reduction
-        print(f"Updated log_rate_per_sec: {log_rate_per_sec}")
 
 
 def process_control_update(control_update):
     action = control_update.get('action')
     template = control_update.get('template')
-    print(f"Received control update: {action}, template={template}")
 
     if action == 'start':
         is_running.set()
-        print("Agent starting log generation")
     elif action == 'stop':
         is_running.clear()
-        print("Agent stopping log generation")
     elif action == 'reset':
-        is_running.clear()
         log_category_weights.clear()
         log_category_weights.update(DEFAULT_LOG_CATEGORY_WEIGHTS)
         log_probabilities.clear()
         log_probabilities.update(DEFAULT_LOG_PROBABILITIES)
         log_rate_per_sec = DEFAULT_LOG_RATE_PER_SEC
-        print("Agent reset to default configuration")
     elif template:
-        # For template actions, simply resume generation if stopped
+        apply_template_profile(template)
         is_running.set()
-        print(f"Agent received simulation template: {template}")
 
 
 def config_update_listener():
     """Listen for config and control updates via Redis pub/sub"""
     pubsub = redis_client.pubsub()
     pubsub.subscribe(f"config:{AGENT_ID}", 'simulation_config', 'simulation_control')
-    
-    print(f"Agent {AGENT_ID} listening for config and control updates...")
     for message in pubsub.listen():
         if message['type'] != 'message':
             continue
@@ -108,9 +269,8 @@ def config_update_listener():
             elif message['channel'] == 'simulation_control':
                 process_control_update(payload)
         except Exception as e:
-            print(f"Error processing pubsub message: {e}")
+            pass
 
-# Start config listener in background thread
 config_thread = threading.Thread(target=config_update_listener, daemon=True)
 config_thread.start()
 
@@ -162,7 +322,7 @@ def send_log(log, category, log_type):
     try:
         requests.post(AGGREGATOR, json=payload, timeout=1)
     except Exception as e:
-        print(f"Failed to send log: {e}")
+        pass
 
 
 def main():

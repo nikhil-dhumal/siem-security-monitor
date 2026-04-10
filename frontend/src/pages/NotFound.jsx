@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom';
 
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+
 const NotFound = () => {
+  const authState = useSelector((state) => state.auth);
+  useEffect(() => {
+  }, [authState]);
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-slate-100">
       <div className="max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-10 text-center shadow-xl">

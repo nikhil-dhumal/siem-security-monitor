@@ -3,20 +3,20 @@ import queryString from 'query-string';
 
 const baseURL = `${import.meta.env.VITE_BACKEND_BASE_URL || ''}/api`;
 
-const privateClient = axios.create({
+const apiClient = axios.create({
   baseURL,
   paramsSerializer: (params) => queryString.stringify(params),
 });
 
-privateClient.interceptors.request.use(async (config) => ({
+apiClient.interceptors.request.use(async (config) => ({
   ...config,
   headers: {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${localStorage.getItem('actkn')}`,
+    ...config.headers,
   },
 }));
 
-privateClient.interceptors.response.use(
+apiClient.interceptors.response.use(
   (response) => {
     if (response && response.data) return response.data;
     return response;
@@ -26,4 +26,4 @@ privateClient.interceptors.response.use(
   }
 );
 
-export default privateClient;
+export default apiClient;

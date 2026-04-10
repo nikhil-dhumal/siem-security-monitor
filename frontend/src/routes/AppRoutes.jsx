@@ -15,7 +15,7 @@ const AppRoutes = () => (
     <Route
       path="/"
       element={
-        <ProtectedRoute allowedRoles={['viewer', 'simulator', 'rule_admin']}>
+        <ProtectedRoute allowedRoles={['viewer', 'admin']}>
           <Dashboard />
         </ProtectedRoute>
       }
@@ -23,16 +23,16 @@ const AppRoutes = () => (
     <Route
       path="/analytics"
       element={
-        <ProtectedRoute allowedRoles={['viewer', 'simulator', 'rule_admin']}>
+        <ProtectedRoute allowedRoles={['viewer', 'admin']}>
           <AnalyticsPage />
         </ProtectedRoute>
       }
     />
     <Route
-      path="/history"
+      path="/records"
       element={
-        <ProtectedRoute allowedRoles={['viewer', 'simulator', 'rule_admin']}>
-          <HistoryPage />
+        <ProtectedRoute allowedRoles={['viewer', 'admin']}>
+          <Records />
         </ProtectedRoute>
       }
     />
@@ -47,16 +47,8 @@ const AppRoutes = () => (
     <Route
       path="/rules"
       element={
-        <ProtectedRoute allowedRoles={['rule_admin']}>
+        <ProtectedRoute allowedRoles={['admin']}>
           <Rules />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/records"
-      element={
-        <ProtectedRoute allowedRoles={['viewer', 'simulator', 'rule_admin']}>
-          <Records />
         </ProtectedRoute>
       }
     />

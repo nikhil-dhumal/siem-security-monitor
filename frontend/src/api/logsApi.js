@@ -1,4 +1,4 @@
-import publicClient from './client/public.client';
+import apiClient from './client';
 
 const logsEndpoints = {
   list: 'logs/',
@@ -17,7 +17,7 @@ const logsEndpoints = {
 const logsApi = {
   fetchLogs: async (params = {}) => {
     try {
-      const response = await publicClient.get(logsEndpoints.list, { params });
+      const response = await apiClient.get(logsEndpoints.list, { params });
       return { response };
     } catch (err) {
       return { err };
@@ -26,7 +26,7 @@ const logsApi = {
 
   fetchLogById: async (id) => {
     try {
-      const response = await publicClient.get(logsEndpoints.detail(id));
+      const response = await apiClient.get(logsEndpoints.detail(id));
       return { response };
     } catch (err) {
       return { err };
@@ -35,7 +35,7 @@ const logsApi = {
 
   fetchSummary: async (params = {}) => {
     try {
-      const response = await publicClient.get(logsEndpoints.summary, { params });
+      const response = await apiClient.get(logsEndpoints.summary, { params });
       return { response };
     } catch (err) {
       return { err };
@@ -44,7 +44,7 @@ const logsApi = {
 
   fetchTimeline: async (params = {}) => {
     try {
-      const response = await publicClient.get(logsEndpoints.timeline, { params });
+      const response = await apiClient.get(logsEndpoints.timeline, { params });
       return { response };
     } catch (err) {
       return { err };
@@ -53,7 +53,7 @@ const logsApi = {
 
   fetchCategories: async (params = {}) => {
     try {
-      const response = await publicClient.get(logsEndpoints.categories, { params });
+      const response = await apiClient.get(logsEndpoints.categories, { params });
       return { response };
     } catch (err) {
       return { err };
@@ -62,7 +62,7 @@ const logsApi = {
 
   fetchEventTypes: async (params = {}) => {
     try {
-      const response = await publicClient.get(logsEndpoints.eventTypes, { params });
+      const response = await apiClient.get(logsEndpoints.eventTypes, { params });
       return { response };
     } catch (err) {
       return { err };
@@ -71,7 +71,7 @@ const logsApi = {
 
   fetchGeo: async (params = {}) => {
     try {
-      const response = await publicClient.get(logsEndpoints.geo, { params });
+      const response = await apiClient.get(logsEndpoints.geo, { params });
       return { response };
     } catch (err) {
       return { err };
@@ -80,7 +80,7 @@ const logsApi = {
 
   fetchTopIps: async (params = {}) => {
     try {
-      const response = await publicClient.get(logsEndpoints.topIps, { params });
+      const response = await apiClient.get(logsEndpoints.topIps, { params });
       return { response };
     } catch (err) {
       return { err };
@@ -89,7 +89,7 @@ const logsApi = {
 
   fetchTopHosts: async (params = {}) => {
     try {
-      const response = await publicClient.get(logsEndpoints.topHosts, { params });
+      const response = await apiClient.get(logsEndpoints.topHosts, { params });
       return { response };
     } catch (err) {
       return { err };
@@ -98,7 +98,7 @@ const logsApi = {
 
   fetchTopUsers: async (params = {}) => {
     try {
-      const response = await publicClient.get(logsEndpoints.topUsers, { params });
+      const response = await apiClient.get(logsEndpoints.topUsers, { params });
       return { response };
     } catch (err) {
       return { err };
@@ -107,7 +107,7 @@ const logsApi = {
 
   fetchOutcomes: async (params = {}) => {
     try {
-      const response = await publicClient.get(logsEndpoints.outcomes, { params });
+      const response = await apiClient.get(logsEndpoints.outcomes, { params });
       return { response };
     } catch (err) {
       return { err };

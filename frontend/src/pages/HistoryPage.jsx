@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import TopBar from '../components/layout/TopBar';
 import LogTable from '../components/LogTable';
 import AlertTable from '../components/AlertTable';
@@ -21,6 +22,9 @@ const IncidentList = React.memo(({ incidents }) => (
 ));
 
 const HistoryPage = () => {
+  const authState = useSelector((state) => state.auth);
+  useEffect(() => {
+  }, [authState]);
   const [activeTab, setActiveTab] = useState('logs');
   const [logs, setLogs] = useState([]);
   const [alerts, setAlerts] = useState([]);
@@ -151,8 +155,8 @@ const HistoryPage = () => {
                 onClick={() => handleTabChange(tab.key)}
                 className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
                   activeTab === tab.key
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
                 {tab.label}

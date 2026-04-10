@@ -7,6 +7,9 @@ import TopBar from '../components/layout/TopBar';
 import RulesForm from '../components/RulesForm';
 
 const Rules = () => {
+  const authState = useSelector((state) => state.auth);
+  useEffect(() => {
+  }, [authState]);
   const dispatch = useDispatch();
   const rules = useSelector((state) => state.rules.list);
   const loading = useSelector((state) => state.rules.loading);

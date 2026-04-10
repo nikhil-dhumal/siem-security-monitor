@@ -1,4 +1,4 @@
-import privateClient from './client/private.client';
+import apiClient from './client/private.client';
 
 const rulesEndpoints = {
   list: 'rules/',
@@ -8,7 +8,7 @@ const rulesEndpoints = {
 const rulesApi = {
   fetchRules: async () => {
     try {
-      const response = await privateClient.get(rulesEndpoints.list);
+      const response = await apiClient.get(rulesEndpoints.list);
       return { response };
     } catch (err) {
       return { err };
@@ -17,7 +17,7 @@ const rulesApi = {
 
   updateRule: async (id, data) => {
     try {
-      const response = await privateClient.patch(rulesEndpoints.detail(id), data);
+      const response = await apiClient.patch(rulesEndpoints.detail(id), data);
       return { response };
     } catch (err) {
       return { err };

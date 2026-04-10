@@ -11,6 +11,73 @@ const OUTCOME_COLOR = {
   denied: '#f97316',
 };
 
+const PieChart = ({ title, data = [], labelKey, valueKey, colors = [] }) => {
+  const total = data.reduce((sum, item) => sum + (item[valueKey] || 0), 0);
+  const normalized = data
+    .map((item, index) => ({
+      ...item,
+      value: item[valueKey] || 0,
+      label: item[labelKey] || 'Unknown',
+      color: colors[index % colors.length] || '#6366f1',
+    }))
+    .filter((item) => item.value > 0);
+
+  const radius = 60;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow">
+      <h3 className="mb-4 text-base font-semibold text-gray-900">{title}</h3>
+      {total === 0 ? (
+        <p className="text-sm text-gray-500">No data available</p>
+      ) : (
+        <div className="flex flex-col items-center gap-4 md:flex-row">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="24" />
+            {normalized.map((item, idx) => {
+              const fraction = item.value / total;
+              const dashArray = `${fraction * circumference} ${circumference}`;
+              const strokeDashoffset = circumference - offset;
+              offset += fraction * circumference;
+              return (
+                <circle
+                  key={idx}
+                  cx="80"
+                  cy="80"
+                  r={radius}
+                  fill="none"
+                  stroke={item.color}
+                  strokeWidth="24"
+                  strokeDasharray={dashArray}
+                  strokeDashoffset={strokeDashoffset}
+                  transform="rotate(-90 80 80)"
+                />
+              );
+            })}
+            <circle cx="80" cy="80" r={radius - 20} fill="white" />
+            <text x="80" y="90" textAnchor="middle" className="text-sm font-semibold" fill="#111827">
+              {total}
+            </text>
+          </svg>
+          <div className="space-y-2">
+            {normalized.map((item, idx) => {
+              const percentage = Math.round((item.value / total) * 100);
+              return (
+                <div key={idx} className="flex items-center gap-2 text-sm">
+                  <span className="inline-flex h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="font-medium text-gray-900">{item.label}</span>
+                  <span className="text-gray-500">{item.value} ({percentage}%)</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const OutcomeDistribution = ({ outcomes = [] }) => {
   const total = outcomes.reduce((sum, item) => sum + item.count, 0) || 1;
   const outcomeList = [
@@ -21,36 +88,14 @@ const OutcomeDistribution = ({ outcomes = [] }) => {
     { label: 'Unknown', key: 'unknown', color: '#9ca3af' },
   ];
 
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow">
-      <h2 className="mb-6 text-lg font-bold text-gray-900">Event Outcomes</h2>
-      <div className="space-y-4">
-        {outcomeList.map((item) => {
-          const count = outcomes.find((o) => (o.outcome || 'unknown').toLowerCase() === item.key)?.count || 0;
-          const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
-          return (
-            <div key={item.key}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                <span className="text-sm font-semibold text-gray-900">{count} ({percentage}%)</span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-                <div
-                  className="h-full transition-all duration-300"
-                  style={{ width: `${percentage}%`, backgroundColor: item.color }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-        <p className="text-sm text-gray-600">
-          Total Events: <span className="font-bold text-gray-900">{total}</span>
-        </p>
-      </div>
-    </div>
-  );
+  const pieData = outcomeList.map((item) => ({
+    label: item.label,
+    outcome: item.key,
+    count: outcomes.find((o) => (o.outcome || 'unknown').toLowerCase() === item.key)?.count || 0,
+    color: item.color,
+  }));
+
+  return <PieChart title="Event Outcome Distribution" data={pieData} labelKey="label" valueKey="count" colors={outcomeList.map((i) => i.color)} />;
 };
 
 const Analytics = () => {
@@ -61,6 +106,7 @@ const Analytics = () => {
   const [eventTypes, setEventTypes] = useState([]);
   const [topIps, setTopIps] = useState([]);
   const [topHosts, setTopHosts] = useState([]);
+  const [topUsers, setTopUsers] = useState([]);
   const [outcomes, setOutcomes] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,13 +115,14 @@ const Analytics = () => {
       setLoading(true);
       const params = { hours };
 
-      const [summaryRes, timelineRes, categoriesRes, eventTypesRes, topIpsRes, topHostsRes, outcomesRes] = await Promise.all([
+      const [summaryRes, timelineRes, categoriesRes, eventTypesRes, topIpsRes, topHostsRes, topUsersRes, outcomesRes] = await Promise.all([
         logsApi.fetchSummary(params),
         logsApi.fetchTimeline(params),
         logsApi.fetchCategories(params),
         logsApi.fetchEventTypes(params),
         logsApi.fetchTopIps(params),
         logsApi.fetchTopHosts(params),
+        logsApi.fetchTopUsers(params),
         logsApi.fetchOutcomes(params),
       ]);
 
@@ -85,6 +132,7 @@ const Analytics = () => {
       if (eventTypesRes.response) setEventTypes(eventTypesRes.response);
       if (topIpsRes.response) setTopIps(topIpsRes.response);
       if (topHostsRes.response) setTopHosts(topHostsRes.response);
+      if (topUsersRes.response) setTopUsers(topUsersRes.response);
       if (outcomesRes.response) setOutcomes(outcomesRes.response);
 
       setLoading(false);
@@ -193,9 +241,22 @@ const Analytics = () => {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <BarChart title="Events by Category" data={categories} labelKey="category" valueKey="count" />
-        <BarChart title="Events by Type" data={eventTypes} labelKey="event_type" valueKey="count" />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <PieChart
+          title="Events by Category"
+          data={categories.map((item) => ({ category: item.category || 'Unknown', count: item.count }))}
+          labelKey="category"
+          valueKey="count"
+          colors={[ '#3b82f6', '#10b981', '#f97316', '#8b5cf6', '#ec4899', '#f59e0b' ]}
+        />
+        <PieChart
+          title="Events by Type"
+          data={eventTypes.map((item) => ({ event_type: item.event_type || 'Unknown', count: item.count }))}
+          labelKey="event_type"
+          valueKey="count"
+          colors={[ '#6366f1', '#14b8a6', '#f97316', '#e11d48', '#0ea5e9', '#a855f7' ]}
+        />
+        <OutcomeDistribution outcomes={outcomes} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -203,7 +264,11 @@ const Analytics = () => {
         <SimpleTable title="Top 10 Hosts" data={topHosts} columns={[{ key: 'host' }, { key: 'count' }]} />
       </div>
 
-      <OutcomeDistribution outcomes={outcomes} />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <BarChart title="Events by Hour" data={timeline} labelKey="bucket" valueKey="count" />
+        <SimpleTable title="Top 10 Users" data={topUsers} columns={[{ key: 'user' }, { key: 'count' }]} />
+      </div>
+
     </div>
   );
 };

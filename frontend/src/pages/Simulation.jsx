@@ -11,6 +11,7 @@ import {
 } from "../features/simulation/simulationSlice";
 
 const Simulation = () => {
+  const authState = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const simulation = useSelector((state) => state.simulation);
   const debounceRef = useRef(null);
@@ -18,7 +19,7 @@ const Simulation = () => {
   const [saveStatus, setSaveStatus] = useState(null); // 'saving', 'saved', 'error'
 
   useEffect(() => {
-    dispatch(setSimulationStatus("ready"));
+    dispatch(setSimulationStatus("stopped"));
   }, [dispatch]);
 
   const handleAction = async (action) => {
@@ -37,10 +38,9 @@ const Simulation = () => {
         } else if (action === 'start') {
           newStatus = 'running';
         } else if (action === 'reset') {
-          newStatus = 'ready';
+          newStatus = simulation.status === 'running' ? 'running' : 'stopped';
           // Reset config to default values
           const defaultConfig = {
-            eventRate: 1,
             agentProbabilities: {
               auth: 0.2,
               network: 0.15,

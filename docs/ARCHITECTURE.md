@@ -1,256 +1,167 @@
 # System Architecture
 
-![System Architecture](images/architecture.png)
-
 ## Overview
 
-This system is designed to collect logs from multiple machines, process them, detect suspicious behavior, and present alerts to users through a dashboard.
+This project implements a distributed **Security Information and Event Management (SIEM)** system.
 
-The architecture follows a **stream-based processing pipeline**. Logs flow through multiple components where they are processed step by step.
+It is designed to collect logs from multiple synthetic sources, normalize them, process events with a rule-based detection engine, and present alerts through a web dashboard.
 
-The main goals of the architecture are:
-
-* Handle logs from many machines
-* Process events in near real-time
-* Detect suspicious activities using rule-based detection
-* Provide alerts to users through a dashboard
-* Keep the system modular and scalable
-
-Each component in the architecture has a specific responsibility.
+The architecture is modular and event-driven, with separate ingestion, processing, storage, and presentation layers.
 
 ---
 
-# 1. Agents (Synthetic Log Generators)
+## Key Components
 
-In a real SIEM system, agents run on machines and collect logs from operating systems, applications, and network devices.
+### 1. Log Generation Agents
+- Simulate activity for different systems: workstation, web server, firewall, DNS server, file server, and VPN gateway.
+- Generate synthetic logs and send them to aggregator endpoints.
+- Support attack scenarios such as failed logins, suspicious access, and unusual network activity.
 
-However, for this project we simulate this behavior using **synthetic log generators**.
+### 2. Aggregators
+- Receive raw logs from agents via HTTP POST.
+- Parse source-specific log formats.
+- Normalize logs into a shared event schema.
+- Publish normalized events into Redis Streams.
 
-Agents are Python programs that **generate artificial logs** to simulate system activity. This allows us to test the SIEM pipeline without requiring real infrastructure.
+### 3. Redis Streams
+- Acts as the central event queue.
+- Stores normalized events reliably until consumed.
+- Supports consumer groups and replay for fault tolerance.
 
-Each agent simulates logs such as:
+### 4. Detection Worker
+- Runs as part of the Django environment.
+- Consumes normalized events from Redis Streams.
+- Applies rule-based detection logic.
+- Creates alerts and incidents in PostgreSQL.
+- Broadcasts real-time alerts to connected frontend clients via WebSocket.
 
-* login attempts
-* authentication failures
-* network connections
-* system events
-* error messages
+### 5. PostgreSQL
+- Persists normalized events, alerts, incidents, and rule configurations.
+- Enables historical queries and analytics.
 
-Agents can also simulate **abnormal activity patterns**, such as:
+### 6. React Dashboard
+- Displays live alerts, incident summaries, analytics, and history.
+- Subscribes to real-time alert updates via WebSocket.
+- Uses REST APIs for paginated data and analytics queries.
+- Implements role-based UI controls for Viewer, Admin, and Simulator users.
 
-* high login failure rate
-* repeated access attempts
-* unusual traffic spikes
-
-These synthetic logs are sent to the **aggregators**, where they are processed just like real logs in a production SIEM system.
-
-This approach allows us to demonstrate how the system would behave in a real environment while keeping the setup simple and reproducible.
-
----
-
-# 2. Aggregators
-
-Aggregators receive logs from many agents.
-
-Their responsibilities include:
-
-* collecting logs from multiple sources
-* parsing log formats
-* extracting important fields
-* converting logs into a standard structure
-
-This step is called **normalization**.
-
-Different systems generate logs in different formats. Aggregators convert these logs into a **common structured event format** so that downstream components can process them consistently.
-
-The exact structure of the normalized event schema is documented separately.
-
-See: [SCHEMA.md](SCHEMA.md)
-
-After normalization, aggregators publish the structured events to **Redis Streams**.
-
-Multiple aggregators can run in parallel to support higher log volumes and provide horizontal scalability.
+### 7. Monitoring Layer
+- Prometheus scrapes metrics from Redis and PostgreSQL exporters.
+- Grafana visualizes system health and performance dashboards.
 
 ---
 
-# 3. Redis Streams (Event Queue)
+## Data Flow
 
-Redis Streams acts as the **event streaming layer** of the system.
+### Real-time alert processing
+1. An agent generates a synthetic log event.
+2. The agent sends the log to an aggregator endpoint.
+3. The aggregator normalizes the log into the shared event schema.
+4. The aggregator publishes the event to Redis Streams.
+5. The detection worker consumes the event.
+6. The worker evaluates the event against detection rules.
+7. If a rule matches, an alert is generated and saved.
+8. The alert is broadcast via WebSocket to the frontend.
+9. Connected dashboard clients receive the alert instantly.
 
-Its responsibilities:
-
-* store incoming normalized events
-* provide a queue for processing
-* allow multiple workers to consume events
-
-Why Redis Streams is used:
-
-* supports streaming data
-* enables scalable event processing
-* allows multiple detection workers
-* ensures events are not lost if workers restart
-
-Events written to Redis Streams form an **event stream** that detection workers consume.
-
----
-
-# 4. Detection Workers
-
-Detection workers read events from Redis Streams.
-
-Their job is to detect suspicious activity using **rule-based detection logic**.
-
-Examples of detection rules:
-
-* multiple failed login attempts
-* access from suspicious IP addresses
-* unusual system activity
-* repeated authentication failures
-
-When a rule is triggered:
-
-1. an **alert** is generated
-2. the alert is stored in the database
-3. the alert is published for real-time notification
-
-Multiple detection workers can run simultaneously. This allows the system to process large numbers of events.
+### Historical query flow
+1. The frontend sends a REST request to the backend.
+2. The backend queries PostgreSQL for stored alerts or incidents.
+3. The response is returned to the frontend.
+4. The dashboard renders historical data and analytics.
 
 ---
 
-# 5. PostgreSQL Database
+## Access Control
 
-PostgreSQL stores the main persistent data of the system.
+The frontend supports three user roles selected at login:
 
-The database stores:
+- **Viewer:** read-only access to dashboard and analytics.
+- **Admin:** full access including rule and incident management.
+- **Simulator:** access to attack simulation controls only.
 
-* normalized events
-* alerts generated by detection workers
-* incidents created from alerts
-
-This allows:
-
-* historical analysis
-* incident investigation
-* dashboard queries
-* audit trails
-
-Using a relational database makes it easier to perform structured queries and analysis.
+Role selection is stored client-side and controls UI visibility.
 
 ---
 
-# 6. Redis Streams (Real-Time Alerts)
+## Deployment Notes
 
-Redis Streams is also used for **alert delivery** in addition to event ingestion.
+The system is deployed with Docker Compose.
 
-When detection workers generate alerts, they write them to a **separate Redis Stream dedicated to alerts**.
+- `docker-compose.yml` starts the core SIEM components.
+- `docker-compose.monitoring.yml` adds Prometheus and Grafana.
+- Use both compose files together to provide exporters with the required backend services.
 
-The Django backend consumes alerts from this stream using a **consumer group**.
+Example:
 
-Using Redis Streams for alerts provides several advantages:
-
-* reliable delivery of alerts
-* ability to replay alerts if needed
-* persistence of alerts until they are acknowledged
-* support for multiple consumers
-
-This improves the reliability of the alerting system.
+```bash
+cd infrastructure
+docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+```
 
 ---
 
-# 7. Django Backend
+## System Diagram
 
-The Django backend acts as the **main API server** for the system.
+```
+Agent -> Aggregator -> Redis Stream -> Detection Worker -> PostgreSQL
+                              ↓
+                              WebSocket -> React Dashboard
+```
 
-It provides:
-
-REST APIs for:
-
-* fetching events
-* viewing alerts
-* managing incidents
-
-It also manages:
-
-* user authentication
-* alert management
-* communication with the database
-
-The backend receives real-time alerts through Redis Pub/Sub and forwards them to the dashboard using **WebSockets**.
+Additional services:
+- `Keycloak` for authentication integration.
+- `Prometheus` and `Grafana` for observability.
 
 ---
 
-# 8. React Dashboard
+## Design Principles
 
-The React dashboard is the user interface of the system.
+- **Modularity:** separate ingestion, processing, storage, and presentation.
+- **Reliability:** use Redis Streams for durable event delivery.
+- **Explainability:** generate alerts with rule-based reasoning.
+- **Observability:** monitor system health with Prometheus and Grafana.
+- **Education:** keep the architecture easy to understand and extend.
 
-Users interact with the system through this dashboard.
+**Purpose:** User interface for monitoring and analytics
 
-The dashboard allows users to:
+**Features:**
+- Real-time alert display (WebSocket)
+- Historical data queries (REST API)
+- Role-based access control (Viewer/Admin/Simulator)
+- Charts and visualizations
+- Incident management
+- Rule configuration (Admin only)
+- Simulation controls (Simulator only)
 
-* view detected alerts
-* monitor system activity
-* investigate incidents
-* analyze log data
-
-The dashboard communicates with the backend using:
-
-* REST APIs for data retrieval
-* WebSockets for real-time alerts
-
-This ensures that new alerts appear immediately on the interface.
-
----
-
-# 9. Event Flow Summary
-
-The complete data flow is as follows:
-
-1. Agents generate logs.
-2. Logs are sent to aggregators.
-3. Aggregators normalize logs into structured events.
-4. Events are written to Redis Streams.
-5. Detection workers read events from the stream.
-6. Detection rules generate alerts.
-7. Alerts and events are stored in PostgreSQL.
-8. Alerts are written to Redis Streams.
-9. Django consumes alerts from the stream and forwards them to the dashboard using WebSockets.
-10. Users see alerts in real time.
+**User Roles:**
+- **Viewer:** Read-only access to dashboard, analytics, history
+- **Admin:** Full access, can manage rules and incidents
+- **Simulator:** Simulation controls only
 
 ---
 
-# 10. Scalability
+## Design Principles
 
-The architecture supports scaling by adding more components.
+**Modularity:** Each component has a single clear responsibility
 
-Examples:
+**Scalability:** 
+- Horizontal scaling of agents and aggregators
+- Multiple workers can process events independently
+- Redis Streams enables consumer groups
 
-More agents
-→ simulate more machines
+**Real-time:** Detection and alerting happen in milliseconds
 
-More aggregators
-→ handle larger log volume
+**Reliability:** 
+- Redis Streams persists events
+- Database persistence for historical analysis
+- No data loss on component restart
 
-More detection workers
-→ process events faster
+**Separation of Concerns:**
+- Log collection (agents/aggregators)
+- Event processing (detection worker)
+- Data storage (PostgreSQL)
+- Real-time delivery (Channels)
+- UI/visualization (React)
 
-Redis Streams and Pub/Sub allow the system to handle **high event throughput**.
 
----
-
-# 11. Design Advantages
-
-This architecture has several benefits:
-
-**Modular design:** Each component has a clear responsibility.
-
-**Scalability:** Workers and aggregators can scale horizontally.
-
-**Reliability:** Redis Streams ensures that events and alerts are not lost, even if processing services restart.
-
-**Replay capability:** Streams allow components to re-read events or alerts if necessary, which is useful for debugging and recovery.
-
-**Real-time alert delivery:** Alerts are streamed to the backend and pushed to the dashboard using WebSockets.
-
-**Separation of concerns:** Log collection, detection, storage, and visualization are independent.
-
----
