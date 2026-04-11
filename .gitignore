@@ -101,8 +101,6 @@ node_modules/
 /dist/
 /dist-ssr/
 
-# Ignore system status and requirements
 SYSTEM_STATUS.md
-requirements.txt
 .venv/
 ALL_COMMANDS.sh
