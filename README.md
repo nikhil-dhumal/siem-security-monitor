@@ -52,7 +52,7 @@ Completed areas include:
 ## Technology Stack
 
 - Backend: Python, Django, Django REST Framework, Django Channels
-- Frontend: React, Vite, Keycloak integration, WebSockets
+- Frontend: React, Vite, WebSockets
 - Data store: PostgreSQL
 - Event queue: Redis Streams
 - Containerization: Docker, Docker Compose
@@ -79,7 +79,6 @@ This starts:
 - Agents
 - Django backend
 - Detection worker
-- Keycloak
 
 ### 2. Start the frontend
 
