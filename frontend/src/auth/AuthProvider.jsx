@@ -28,9 +28,8 @@ const AuthProvider = ({ children }) => {
           console.error('Failed to parse:', { userStr, rolesStr });
         }
       } else {
+        dispatch(logout());
       }
-      
-      dispatch(logout());
     } catch (error) {
       console.error('✗ AuthProvider error:', error);
       dispatch(logout());

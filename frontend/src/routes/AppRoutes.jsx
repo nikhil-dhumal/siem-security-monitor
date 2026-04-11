@@ -1,7 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import Dashboard from '../pages/Dashboard';
 import AnalyticsPage from '../pages/AnalyticsPage';
-import HistoryPage from '../pages/HistoryPage';
 import Simulation from '../pages/Simulation';
 import Rules from '../pages/Rules';
 import Records from '../pages/Records';

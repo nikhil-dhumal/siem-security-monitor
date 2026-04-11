@@ -9,7 +9,7 @@ import App from './App';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  //<React.StrictMode>
+  <React.StrictMode>
     <Provider store={store}>
       <BrowserRouter>
         <AuthProvider>
@@ -19,5 +19,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         </AuthProvider>
       </BrowserRouter>
     </Provider>
-  //</React.StrictMode>
+  </React.StrictMode>
 );
