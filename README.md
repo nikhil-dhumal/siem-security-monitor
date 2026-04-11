@@ -29,19 +29,6 @@ The focus is on a modular, easy-to-understand architecture that demonstrates rea
 
 ---
 
-## Current Status
-
-> ⚠️ Work in progress. This repository contains a functional distributed SIEM prototype, but further improvements are planned.
-
-Completed areas include:
-- multi-source log ingestion,
-- normalized event processing,
-- rule-based detection,
-- alert and incident modeling,
-- frontend dashboard with role-based access controls.
-
----
-
 ## Architecture and Documentation
 
 - Main architecture overview: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
@@ -52,10 +39,10 @@ Completed areas include:
 ## Technology Stack
 
 - Backend: Python, Django, Django REST Framework, Django Channels
-- Frontend: React, Vite, WebSockets
+- Frontend: React, WebSockets
 - Data store: PostgreSQL
 - Event queue: Redis Streams
-- Containerization: Docker, Docker Compose
+- Containerization: Docker
 - Monitoring: Prometheus, Grafana
 - Testing: Selenium WebDriver
 
@@ -131,19 +118,6 @@ The selected role is stored in the browser and used for client-side access contr
 
 ---
 
-## Project Team
-
-- Nikhil Dhumal (25m0766): Agents, aggregator, and event streaming setup
-- Ayush Kumar (25m0835): Django backend and frontend integration
-- Aditya Manoj (25m0748): Detection engine and project documentation
-
----
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
-
-
 ### Start the System with Docker Compose
 
 ```bash
@@ -203,41 +177,6 @@ npm run test:selenium
 This test launches Chrome in headless mode, opens the frontend at `http://localhost:5173`, and verifies the page loads.
 
 Note: Chrome/Chromium must be installed on your machine for this test to run.
-
-## Login
-
-On the login page, select your user role:
-
-- **Viewer**: Select to test read-only dashboard access
-- **Admin**: Select for full access including rules management
-- **Simulator**: Select to test attack simulation features
-
-No authentication is required - just select a role and enter the dashboard.
-
----
-
-# Current Implementation Status
-
-## Completed Features ✅
-
-- **Agent System**: Synthetic log generators for multiple system types (web server, firewall, DNS, etc.)
-- **Log Aggregation**: Multiple aggregators normalize logs into common schema
-- **Event Storage**: Redis Streams-based event queue
-- **Detection Worker**: Rule-based alert generation from events
-- **Database**: PostgreSQL for persistent storage of events, alerts, incidents
-- **Dashboard**: React-based UI with role-based access
-- **Real-time Alerts**: WebSocket streaming of alerts to dashboard
-- **Analytics**: Timeline, geography, event type analysis
-- **Incident Management**: Correlation of related alerts into incidents
-- **Detection Rules**: Admin interface for managing alert rules
-- **Simulation**: Controls for triggering simulated attack scenarios
-- **User Roles**: Viewer, Admin, Simulator roles with appropriate access levels
-- **Performance**: WebSocket message throttling prevents UI freezing
-
-## Architecture & Documentation
-
-- System Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- Data Schema: [docs/SCHEMA.md](docs/SCHEMA.md)
 
 ---
 
