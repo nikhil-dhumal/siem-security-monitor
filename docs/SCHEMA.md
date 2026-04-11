@@ -152,35 +152,15 @@ Detection rules define when alerts should be generated.
 
 ---
 
-## User Roles
-
-The frontend supports three role types selected on the login page:
-
-- **viewer**: Read-only access to dashboard, analytics, and history.
-- **admin**: Full dashboard access, including rule and incident management.
-- **simulator**: Access to simulation controls only.
-
-Role selection is stored client-side and controls UI visibility.
-
----
-
 ## Database Tables
 
 The PostgreSQL database includes the following key tables:
 
 | Table | Purpose |
 |-------|---------|
-| `logs_logevent` | Normalized log events received from aggregators |
-| `alerts_alert` | Generated alerts from the detection engine |
-| `alerts_incident` | Correlated incidents created from related alerts |
-| `detection_ruleconfig` | Configured detection rules and thresholds |
+| `siem_logevent` | Normalized log events received from aggregators |
+| `siem_alert` | Generated alerts from the detection engine |
+| `siem_incident` | Correlated incidents created from related alerts |
+| `siem_ruleconfig` | Configured detection rules and thresholds |
 
 ---
-
-## Notes
-
-- All timestamps use UTC in ISO 8601 format.
-- Event IDs are UUIDs.
-- Alert and incident IDs are auto-incrementing integers.
-- The system normalizes logs from varying sources into a single schema before detection.
-- API responses follow these schema definitions for consistency.
